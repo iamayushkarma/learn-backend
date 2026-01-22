@@ -1,0 +1,449 @@
+DATABASES MASTER ROADMAP (SQL + NOSQL + ORM)
+===========================================
+
+0) HOW TO USE THIS ROADMAP
+--------------------------
+- This is a structured topic map (what to master + what you should be able to do).
+- No study plan, no timelines—only skills and concepts.
+
+====================================================================
+1) SQL (HIGH PRIORITY) — POSTGRESQL / MYSQL BASICS
+====================================================================
+
+1.1 CORE DATABASE CONCEPTS
+--------------------------
+
+A) What a Relational Database Is
+- Tables, rows, columns
+- Primary key as row identity
+- Relationships between tables (1–1, 1–many, many–many)
+- Data types (int, bigint, numeric/decimal, text/varchar, boolean, date/time, json)
+
+B) SQL Query Fundamentals (must be fluent)
+- SELECT + FROM
+- WHERE
+- ORDER BY
+- LIMIT / OFFSET
+- DISTINCT
+- GROUP BY + HAVING
+- Aliases
+- NULL behavior:
+  - NULL comparisons (IS NULL / IS NOT NULL)
+  - NULL in aggregates and joins
+
+C) Practical Query Patterns
+- Pagination:
+  - offset-based (LIMIT/OFFSET)
+  - cursor-based (keyset pagination: WHERE id > ? ORDER BY id LIMIT ?)
+- Filtering and sorting securely (avoid injection, validate allowed fields)
+- Aggregations:
+  - COUNT, SUM, AVG, MIN, MAX
+- Date/time queries and timezone awareness (concept-level)
+- Upserts:
+  - PostgreSQL: ON CONFLICT DO UPDATE
+  - MySQL: ON DUPLICATE KEY UPDATE
+
+Skill Checkpoints
+- Can write readable queries for common API needs (list/filter/sort/paginate)
+- Can explain why keyset pagination is often more stable than offset pagination
+- Can handle NULL correctly in filters and joins
+
+------------------------------------------------------------
+
+1.2 SCHEMA DESIGN + NORMALIZATION
+---------------------------------
+
+A) Schema Design Goals
+- Data correctness (avoid invalid states)
+- Maintainability (easy to extend)
+- Performance (fast reads/writes where it matters)
+
+B) Normalization (core levels you must know)
+- 1NF: atomic values, no repeating groups
+- 2NF: no partial dependency on part of a composite key
+- 3NF: no transitive dependency (non-key depends on non-key)
+- When to denormalize:
+  - heavy read patterns
+  - precomputed counters/summaries
+  - acceptable duplication with consistency strategy
+
+C) Keys and Relationships
+- Primary key (natural vs surrogate)
+- Foreign keys
+- Many-to-many:
+  - join table pattern (e.g., user_roles)
+- Cascading behavior:
+  - ON DELETE CASCADE / SET NULL / RESTRICT
+- Soft deletes:
+  - deletedAt pattern
+  - tradeoffs (uniqueness + query complexity)
+
+D) Data Types + Constraints Planning
+- Use correct types (avoid storing dates as text)
+- Numeric precision (money: numeric/decimal vs integer cents)
+- JSON columns (Postgres JSONB) — when useful, when dangerous
+- Naming conventions for tables and columns
+
+Skill Checkpoints
+- Can model a domain with correct relationships and constraints
+- Can justify denormalization decisions with clear tradeoffs
+- Can design schemas that prevent impossible states
+
+------------------------------------------------------------
+
+1.3 JOINS (YOU MUST BE COMFORTABLE)
+----------------------------------
+
+A) Join Types
+- INNER JOIN: matched rows only
+- LEFT JOIN: keep left rows even if missing right
+- RIGHT JOIN (rare; can often flip tables and use LEFT JOIN)
+- FULL OUTER JOIN (Postgres supports; MySQL depends)
+- CROSS JOIN (cartesian; rarely needed)
+- SELF JOIN patterns (hierarchies, referral chains)
+
+B) Join Conditions
+- Joining on foreign key relationships
+- Joining on multiple columns (composite join)
+- Beware of accidental fan-out (duplicate multiplication)
+
+C) Common Join Use Cases
+- Fetch parent with child counts
+- Fetch list with optional related data (LEFT JOIN)
+- Many-to-many traversal via join table
+
+Skill Checkpoints
+- Can predict the output row counts of joins (avoid surprises)
+- Can choose correct join type for “optional relation” vs “required relation”
+- Can avoid N+1 query patterns by joining or batching properly
+
+------------------------------------------------------------
+
+1.4 INDEXES (WHERE PERFORMANCE OF REAL APPS LIVES)
+--------------------------------------------------
+
+A) Why Indexes Exist
+- Speed up reads by avoiding full table scans
+- Tradeoff: slower writes + extra storage
+
+B) Index Basics
+- B-tree (default for most queries)
+- What an index helps:
+  - WHERE equality/range
+  - ORDER BY (when matches index order)
+  - JOINs on indexed columns
+- Composite indexes:
+  - left-most prefix rule
+  - ordering of columns matters (most selective first often helps)
+- Covering indexes concept (index-only scans in Postgres)
+
+C) Unique Indexes
+- Enforce uniqueness
+- Useful for natural identifiers (email, username)
+
+D) Partial / Filtered Indexes (Postgres feature)
+- Index only active rows (e.g., WHERE deletedAt IS NULL)
+
+E) Index Anti-Patterns
+- indexing everything blindly
+- low-cardinality columns (sometimes not helpful)
+- forgetting to index foreign keys used in joins
+
+F) Reading Query Plans (must have basic ability)
+- EXPLAIN / EXPLAIN ANALYZE (Postgres)
+- Look for:
+  - Seq Scan vs Index Scan
+  - estimated vs actual rows
+  - high-cost operations
+- Understand slow query causes:
+  - missing index
+  - poor selectivity
+  - wrong join order (planner)
+  - returning too many rows
+
+Skill Checkpoints
+- Can design indexes for your API’s common queries
+- Can explain why a query is slow using EXPLAIN output
+- Can avoid over-indexing while keeping hot paths fast
+
+------------------------------------------------------------
+
+1.5 CONSTRAINTS (DATA INTEGRITY)
+--------------------------------
+
+A) Core Constraints
+- NOT NULL
+- UNIQUE
+- PRIMARY KEY
+- FOREIGN KEY (referential integrity)
+- CHECK constraints (validate allowed ranges/states)
+
+B) Constraint Design Practices
+- enforce business rules at DB layer where it makes sense
+- consistent error handling for constraint violations
+- avoid relying only on app validation (race conditions)
+
+Skill Checkpoints
+- Can prevent invalid states using constraints
+- Can handle constraint violation errors cleanly in the backend
+
+------------------------------------------------------------
+
+1.6 TRANSACTIONS + ISOLATION (BASICS YOU MUST KNOW)
+---------------------------------------------------
+
+A) Transactions
+- ACID overview:
+  - Atomicity: all or nothing
+  - Consistency: preserves constraints
+  - Isolation: concurrency rules
+  - Durability: committed data survives crashes
+- Transaction boundaries:
+  - BEGIN / COMMIT / ROLLBACK
+- When to use transactions:
+  - multi-step updates that must succeed together
+  - money transfers / inventory updates
+  - creating related rows across tables
+
+B) Concurrency Problems You Should Recognize
+- Lost updates
+- Dirty reads (rare in common settings)
+- Non-repeatable reads
+- Phantom reads
+
+C) Isolation Levels (basic understanding + practical meaning)
+- Read Committed (common default in Postgres)
+- Repeatable Read
+- Serializable (strongest, more contention)
+- Why higher isolation can reduce concurrency or create retries
+
+D) Locks (awareness-level but useful)
+- row-level locks
+- SELECT ... FOR UPDATE (pessimistic locking)
+- deadlocks (how they happen; retry strategies)
+
+Skill Checkpoints
+- Can wrap multi-step operations in a transaction safely
+- Can explain when to lock rows and why
+- Can design retry logic for serialization failures (concept-level)
+
+====================================================================
+2) NOSQL (GOOD TO KNOW) — MONGODB
+====================================================================
+
+2.1 DOCUMENT MODEL FUNDAMENTALS
+-------------------------------
+
+A) Core Concepts
+- collections, documents (JSON-like)
+- flexible schema vs schema-less myth (you still need a schema discipline)
+- ObjectId and document identity
+
+B) Modeling Data: Embed vs Reference
+- Embedding:
+  - good for “belongs to” small, bounded lists (e.g., comments preview)
+  - atomic updates inside a single document
+- Referencing:
+  - good for large or growing relations
+  - more “join-like” work at app layer or via aggregation
+
+C) Document Growth Concerns
+- unbounded arrays (risk)
+- document size limits (awareness)
+
+Skill Checkpoints
+- Can decide embed vs reference based on access patterns
+- Can keep documents bounded and maintainable
+
+------------------------------------------------------------
+
+2.2 MONGODB INDEXES
+-------------------
+
+A) Index Basics
+- single-field indexes
+- compound indexes and prefix behavior
+- unique indexes
+
+B) Text & Special Indexes (awareness)
+- text indexes (search)
+- TTL indexes (auto-expire)
+- sparse/partial indexes (concept)
+
+C) Query Patterns & Index Matching
+- filters and sort must align with index
+- avoid collection scans for hot endpoints
+
+Skill Checkpoints
+- Can design indexes for Mongo query patterns
+- Can explain why a Mongo query is slow (index mismatch)
+
+------------------------------------------------------------
+
+2.3 AGGREGATION PIPELINE (REAL POWER OF MONGO)
+----------------------------------------------
+
+A) Pipeline Basics
+- stages run in order
+- transform + group + filter
+
+B) Must-Know Stages
+- $match (filter early)
+- $project (select/transform fields)
+- $group (aggregate)
+- $sort
+- $limit / $skip
+- $lookup (join-like behavior)
+- $unwind (flatten arrays)
+- $facet (multi-result pipelines)
+
+C) Practical Use Cases
+- analytics dashboards
+- grouping and counting
+- join-like queries with $lookup (with caution)
+
+Skill Checkpoints
+- Can build an aggregation pipeline for reporting/analytics
+- Can keep pipelines efficient ($match early, limit output)
+
+------------------------------------------------------------
+
+2.4 WHEN TO USE NOSQL VS SQL (DECISION RULES)
+---------------------------------------------
+
+A) Prefer SQL by Default for Most Apps
+- strong consistency and constraints
+- relational queries, joins, reporting
+- clear schema evolution and integrity
+
+B) When MongoDB/NoSQL Fits Well
+- document-shaped data that’s naturally nested
+- high write throughput with simple access patterns
+- flexible fields where strict relations aren’t required
+- event/log style data (often better in specialized stores too)
+
+C) Common Mistakes
+- using NoSQL to avoid schema design (leads to messy data)
+- modeling relational systems in Mongo without discipline
+- ignoring constraints and expecting app code to guarantee integrity
+
+Skill Checkpoints
+- Can justify DB choice based on:
+  - data shape
+  - query patterns
+  - consistency needs
+  - operational complexity
+
+====================================================================
+3) ORM (NODE.JS) — PRISMA (RECOMMENDED) OR SEQUELIZE / TYPEORM
+====================================================================
+
+3.1 ORM FUNDAMENTALS (APPLIES TO ALL)
+-------------------------------------
+
+A) What an ORM Does
+- maps tables ↔ models
+- generates queries
+- handles migrations and schema evolution (varies)
+- provides query builder and relations handling
+
+B) ORM Benefits
+- developer speed
+- safer query composition
+- consistent access layer
+- migrations management (in many ORMs)
+
+C) ORM Risks / Tradeoffs (must understand)
+- hidden N+1 queries
+- inefficient queries if you don’t inspect generated SQL
+- complex queries may be easier in raw SQL
+- migrations can be misused (danger in production)
+
+Skill Checkpoints
+- Can read and reason about the SQL your ORM produces
+- Can decide when to use raw SQL for complex/reporting queries
+
+------------------------------------------------------------
+
+3.2 PRISMA (EXCELLENT WITH NODE)
+--------------------------------
+
+A) Prisma Core Pieces
+- Prisma Schema file (models, relations, types)
+- Prisma Client (type-safe queries)
+- Migrations workflow (schema change → migrate)
+- Seed scripts (initial data)
+
+B) Modeling Relations
+- 1–1, 1–many, many–many
+- relation fields and foreign keys
+- cascading behavior (awareness; handled via DB constraints)
+
+C) Querying Patterns
+- CRUD operations
+- filtering, sorting, pagination
+- include/select (eager loading)
+- nested writes (create related data)
+- transactions support
+
+D) Performance + Correctness with Prisma
+- avoid N+1 by using include/select wisely
+- control selected fields to avoid huge payloads
+- proper indexing still matters (ORM doesn’t replace indexes)
+- use transactions for multi-step writes
+
+E) Validation Boundaries
+- Prisma validates types, but you still validate API input (Zod/Joi etc.)
+- handle unique constraint errors cleanly
+
+Skill Checkpoints
+- Can build a full module (schema + migration + queries) with relations
+- Can implement pagination/filter/sort safely
+- Can use transactions for critical flows
+
+------------------------------------------------------------
+
+3.3 SEQUELIZE / TYPEORM (ALTERNATIVES)
+--------------------------------------
+
+A) Sequelize (concept focus)
+- models and associations
+- query builder patterns
+- migrations and seeders (via sequelize-cli)
+- raw queries when needed
+
+B) TypeORM (concept focus)
+- entities, repositories, relations
+- migrations
+- query builder
+- decorators-based modeling (TS-heavy style)
+
+Skill Checkpoints
+- Can define associations/relations correctly
+- Can debug performance by inspecting generated SQL
+- Can write raw SQL for advanced reporting safely
+
+====================================================================
+4) REAL-WORLD DATABASE SKILLS (WHAT MAKES YOU “BACKEND STRONG”)
+====================================================================
+
+A) Data Integrity
+- constraints prevent invalid data
+- transactions ensure multi-step consistency
+
+B) Performance Engineering
+- indexes designed for real query patterns
+- query plans reviewed for slow endpoints
+- pagination done correctly (keyset where needed)
+
+C) Evolution and Maintenance
+- safe schema migrations (add columns, backfill, constrain)
+- zero/low downtime migration thinking (concept-level)
+- backup/restore awareness (concept-level)
+
+D) Security and Safety
+- avoid SQL injection (parameterized queries)
+- principle of least privilege for DB users (concept-level)
+- sensitive data storage decisions (hashing, encryption concept)
+
+END

@@ -1,0 +1,736 @@
+NODE.JS + EXPRESS MASTER ROADMAP (STRUCTURED CHECKLIST)
+======================================================
+
+0) HOW TO USE THIS ROADMAP
+--------------------------
+- This is a topic map (what to master + what to be able to do).
+- No study plan, no timelines—only concepts and skill checkpoints.
+
+====================================================================
+1) BACKEND BASICS (MUST BE SOLID)
+====================================================================
+
+1.1 HTTP / HTTPS (CORE WEB PROTOCOL)
+------------------------------------
+
+A) HTTP Fundamentals
+- Client–server model
+- Request–response lifecycle
+- URL anatomy: scheme, host, port, path, query, fragment
+- Idempotency & safety of methods
+- Content negotiation basics (Accept, Content-Type)
+
+B) HTTP Methods (Know purpose + rules)
+- GET: fetch resources, safe, idempotent
+- POST: create or trigger processing, not idempotent
+- PUT: replace full resource, idempotent
+- PATCH: partial update, not necessarily idempotent
+- DELETE: remove resource, idempotent (behavior can vary)
+- HEAD: like GET without body
+- OPTIONS: discover server capabilities (important for CORS)
+- TRACE/CONNECT (awareness-level)
+
+C) Status Codes (Must recognize patterns)
+- 1xx informational (rare in app dev)
+- 2xx success:
+  - 200 OK
+  - 201 Created (+ Location header)
+  - 202 Accepted (async processing)
+  - 204 No Content (no response body)
+- 3xx redirects:
+  - 301/308 permanent
+  - 302/307 temporary
+  - 304 Not Modified (caching)
+- 4xx client errors:
+  - 400 Bad Request (validation/format)
+  - 401 Unauthorized (not authenticated)
+  - 403 Forbidden (authenticated but not allowed)
+  - 404 Not Found
+  - 405 Method Not Allowed
+  - 409 Conflict (duplicate/merge conflicts)
+  - 415 Unsupported Media Type
+  - 422 Unprocessable Entity (validation semantics; optional)
+  - 429 Too Many Requests (rate limit)
+- 5xx server errors:
+  - 500 Internal Server Error
+  - 502 Bad Gateway
+  - 503 Service Unavailable
+  - 504 Gateway Timeout
+
+D) Headers (Know key ones + use cases)
+- Request headers:
+  - Authorization (Bearer, Basic)
+  - Content-Type
+  - Accept
+  - User-Agent
+  - Origin
+  - Referer
+  - Cookie
+  - If-None-Match / If-Modified-Since (caching)
+- Response headers:
+  - Set-Cookie
+  - Cache-Control
+  - ETag / Last-Modified
+  - Location
+  - Access-Control-* (CORS)
+  - Content-Security-Policy (security)
+  - Strict-Transport-Security (HSTS)
+  - X-Content-Type-Options, X-Frame-Options (legacy but common)
+
+E) Cookies (Must be precise)
+- What cookies are (key-value stored by browser)
+- Cookie scopes: domain, path
+- Expiration: session vs persistent cookies
+- Security flags:
+  - HttpOnly (JS cannot read)
+  - Secure (HTTPS only)
+  - SameSite (Lax/Strict/None)
+- Cookies vs tokens (tradeoffs)
+- CSRF relation: why cookies can be risky without defenses
+
+F) HTTPS + TLS (Practical understanding)
+- Why HTTPS matters: confidentiality, integrity, authenticity
+- TLS handshake conceptually
+- Certificates, CA, certificate chain (basic)
+- Mixed content problems
+- HSTS concept
+
+Skill Checkpoints
+- Can read raw HTTP request/response and explain each part
+- Can choose correct method + status code for an API action
+- Can design headers/caching behavior for endpoints
+- Can configure cookies safely for sessions
+
+------------------------------------------------------------
+
+1.2 REST (RESOURCE DESIGN + API SHAPE)
+--------------------------------------
+
+A) Core REST Concepts
+- Resources (nouns), not actions (verbs)
+- Representations (JSON)
+- Statelessness
+- Consistent URL structures
+- HATEOAS (awareness-level; rarely used strictly)
+
+B) Resource Design Patterns
+- Collections vs single resource:
+  - /users
+  - /users/:id
+- Nested resources:
+  - /users/:id/orders
+- When NOT to nest deeply
+- Actions that don’t map neatly:
+  - /auth/login
+  - /users/:id/activate (or PATCH status)
+
+C) Consistent Response Design
+- Standard response envelopes vs plain objects (pick one style)
+- Error response shape:
+  - message
+  - code
+  - details (validation errors)
+  - requestId/traceId (optional but useful)
+
+D) Pagination (Must know multiple styles)
+- Offset-based pagination:
+  - ?page=2&limit=20 or ?offset=20&limit=20
+  - Pros/cons (duplicate/missing items if data changes)
+- Cursor-based pagination:
+  - ?cursor=abc&limit=20
+  - Pros/cons (stable ordering; more complex)
+- Return pagination metadata:
+  - total count (optional)
+  - nextCursor
+  - hasNext
+- Sorting requirement for pagination stability
+
+E) Filtering + Searching
+- Query filters:
+  - ?status=active&role=admin
+- Range filters:
+  - ?minPrice=100&maxPrice=500
+  - dates: ?from=2026-01-01&to=2026-01-31
+- Full-text search (basic awareness; usually DB-driven)
+
+F) Sorting
+- ?sort=createdAt or ?sort=-createdAt
+- Multiple sorts: ?sort=createdAt,-price
+- Validate allowed fields to prevent abuse
+
+G) Versioning
+- URL versioning: /api/v1
+- Header-based versioning (awareness)
+- Deprecation strategy (concept-level)
+
+Skill Checkpoints
+- Can design REST endpoints for a full CRUD resource
+- Can implement pagination + filtering + sorting consistently
+- Can produce predictable, documented error responses
+
+------------------------------------------------------------
+
+1.3 AUTHENTICATION VS AUTHORIZATION
+-----------------------------------
+
+A) Definitions (Must be crystal clear)
+- Authentication: who you are (identity)
+- Authorization: what you can do (permissions)
+
+B) Common Auth Approaches
+- Session-based auth (cookies)
+- Token-based auth (JWT access tokens)
+- API keys (service-to-service)
+- OAuth 2.0 (authorization delegation concept)
+- OpenID Connect (identity layer on OAuth2 concept)
+
+C) Authorization Models
+- Role-Based Access Control (RBAC)
+- Attribute-Based Access Control (ABAC) (awareness)
+- Ownership checks (resource-level permissions)
+
+D) Security Concerns
+- Password hashing (bcrypt/argon2 concept)
+- Brute force protection (rate limits, lockouts)
+- Token expiry + refresh tokens
+- Secure storage:
+  - cookies with HttpOnly + Secure
+  - avoid localStorage for sensitive tokens if possible (context-based)
+- Replay risks and invalidation strategies
+
+Skill Checkpoints
+- Can explain session vs JWT tradeoffs
+- Can enforce permissions at route + resource level
+- Can reason about common auth vulnerabilities
+
+------------------------------------------------------------
+
+1.4 CORS (CROSS-ORIGIN RESOURCE SHARING)
+----------------------------------------
+
+A) Why CORS Exists
+- Same-Origin Policy in browsers
+- “Origin” definition: scheme + domain + port
+- Why servers must explicitly allow cross-origin calls
+
+B) Simple Requests vs Preflight
+- Simple requests requirements (method + headers limitations)
+- Preflight requests:
+  - OPTIONS request
+  - Access-Control-Request-Method
+  - Access-Control-Request-Headers
+
+C) Key CORS Headers
+- Access-Control-Allow-Origin
+- Access-Control-Allow-Methods
+- Access-Control-Allow-Headers
+- Access-Control-Allow-Credentials
+- Access-Control-Expose-Headers
+- Access-Control-Max-Age
+
+D) Cookies & Credentials with CORS (Common pitfall)
+- When sending cookies cross-origin:
+  - client must send credentials
+  - server must allow credentials
+  - Allow-Origin cannot be "*"
+- SameSite=None requires Secure
+
+E) Correct Configuration Patterns
+- Allowlist origins (recommended)
+- Environment-based config (dev vs prod)
+- Handling multiple origins safely
+
+Skill Checkpoints
+- Can debug a CORS error by reading browser console + network tab
+- Can correctly configure CORS for:
+  - SPA (React) → API
+  - cookies-based sessions
+  - token-based auth
+
+------------------------------------------------------------
+
+1.5 JSON + VALIDATION (INPUT/OUTPUT CONTRACT)
+---------------------------------------------
+
+A) JSON Fundamentals for APIs
+- Request body shape conventions
+- Response body shape conventions
+- Field naming conventions (camelCase vs snake_case)
+- Dates format: ISO 8601 (recommended)
+
+B) Schema Validation Concepts
+- Why validate: security, predictability, better errors
+- Validation locations:
+  - request body
+  - query params
+  - path params
+  - headers
+- Sanitization vs validation (different goals)
+- Whitelisting (strip unknown fields) vs allow extra fields
+
+C) Validation Error Design
+- Field-level error messages
+- Consistent error codes
+- Multi-error reporting (collect all vs fail-fast)
+
+Skill Checkpoints
+- Can define a strict contract for every endpoint
+- Can reject invalid input with clear errors
+- Can prevent common injection/abuse via validation rules
+
+====================================================================
+2) NODE.JS ROADMAP (MASTER LEVEL)
+====================================================================
+
+2.1 NODE RUNTIME FOUNDATIONS
+----------------------------
+
+A) What Node.js Is
+- JS runtime built on V8
+- Event-driven, non-blocking I/O
+- Single-threaded event loop with background thread pool
+
+B) Node vs Browser JS
+- No DOM
+- Different globals (process, Buffer, __dirname in CJS)
+- File system, networking, OS access
+
+C) Event Loop Deep Understanding
+- Call stack, task queue, microtask queue
+- Timers phase, I/O callbacks, poll, check, close callbacks
+- Microtasks:
+  - Promises (.then/.catch/.finally)
+  - process.nextTick
+- Practical effect on performance & “blocking”
+
+D) Concurrency Model
+- Asynchronous I/O
+- Worker threads (CPU-bound tasks)
+- Child processes
+- Cluster (multiple processes behind same port)
+- When to use which
+
+Skill Checkpoints
+- Can explain why CPU-heavy work hurts Node performance
+- Can identify and fix an event-loop blocking issue
+
+------------------------------------------------------------
+
+2.2 MODULE SYSTEMS + PROJECT STRUCTURE
+--------------------------------------
+
+A) CommonJS (CJS)
+- require, module.exports
+- Resolution rules (node_modules, relative paths)
+- __dirname / __filename
+
+B) ES Modules (ESM)
+- import/export
+- package.json "type": "module"
+- import path requirements, dynamic import()
+- Differences from CJS
+
+C) Package Management
+- npm basics: package.json, scripts
+- lockfiles (package-lock)
+- dependency types:
+  - dependencies vs devDependencies
+  - peerDependencies (awareness)
+- Semantic versioning ranges (^, ~)
+- Monorepos concept (awareness)
+
+D) Project Layout Patterns (concepts)
+- src/ separation
+- layers:
+  - routes/controllers
+  - services/business logic
+  - data access/repositories
+  - middlewares
+  - utils
+- config management:
+  - environment variables
+  - config files
+
+Skill Checkpoints
+- Can convert between CJS and ESM
+- Can design a clean folder structure for a medium/large API
+
+------------------------------------------------------------
+
+2.3 ASYNC PROGRAMMING (PROMISES)
+--------------------------------
+
+A) Promises + async/await
+- Promise states: pending/fulfilled/rejected
+- async function returns a Promise
+- await behavior and error handling
+
+B) Error Handling Patterns
+- try/catch for async/await
+- promise chains and catch
+- returning vs throwing
+- centralized error patterns (especially for Express)
+
+C) Parallelism + Control
+- Promise.all / allSettled / race / any
+- Avoiding unhandled promise rejections
+- Backpressure concept (awareness)
+
+Skill Checkpoints
+- Can reliably structure async flows without “callback hell”
+- Can make parallel calls safely and handle partial failures
+
+------------------------------------------------------------
+
+2.4 CORE NODE APIS (MUST KNOW)
+------------------------------
+
+A) fs (File System)
+- async vs sync APIs
+- streams vs reading full file
+- path handling with path module
+
+B) http/https (Native server understanding)
+- request/response objects
+- headers, status codes
+- creating basic servers (concept)
+
+C) Streams (Important)
+- readable/writable/duplex/transform
+- piping
+- backpressure basics
+- use cases: file upload/download, large responses
+
+D) Buffer
+- what it is (binary data)
+- encoding (utf8, base64)
+- use cases: file handling, crypto
+
+E) events (EventEmitter)
+- on/emit
+- common patterns
+
+F) Timers
+- setTimeout, setInterval, setImmediate
+- process.nextTick differences
+
+G) process + OS
+- env variables
+- exit codes
+- signals (SIGINT, SIGTERM) and graceful shutdown
+
+H) Crypto (awareness to practical)
+- hashing vs encryption
+- random bytes
+- password hashing should use dedicated libs (bcrypt/argon2)
+
+Skill Checkpoints
+- Can stream large files efficiently
+- Can implement graceful shutdown
+- Can handle binary data for uploads securely
+
+------------------------------------------------------------
+
+2.5 ERROR HANDLING, LOGGING, DEBUGGING
+--------------------------------------
+
+A) Error Types
+- operational errors vs programmer errors
+- custom errors (statusCode, code, details)
+
+B) Observability Basics
+- structured logging (JSON logs)
+- correlation/request IDs
+- log levels: debug/info/warn/error
+
+C) Debugging Toolkit
+- Node inspector
+- stack traces
+- environment-based logging
+- handling uncaughtException/unhandledRejection (carefully)
+
+Skill Checkpoints
+- Can trace a production issue using logs + request IDs
+- Can build consistent error objects across the system
+
+------------------------------------------------------------
+
+2.6 PERFORMANCE + SECURITY (NODE-SPECIFIC)
+------------------------------------------
+
+A) Performance
+- avoid blocking event loop
+- use caching where needed
+- avoid large JSON payloads
+- streaming for large responses
+- connection pooling (DB clients)
+- profiling concepts (CPU & heap)
+
+B) Security Basics in Node
+- dependency hygiene (audits concept)
+- avoid eval / dynamic code execution
+- protect secrets (env vars, secret managers concept)
+- rate limiting / brute force protection (concept)
+- secure defaults for headers
+
+Skill Checkpoints
+- Can identify memory leaks patterns (listeners, caches)
+- Can keep API stable under load (conceptual + practical)
+
+====================================================================
+3) EXPRESS.JS ROADMAP (MASTER LEVEL)
+====================================================================
+
+3.1 EXPRESS CORE CONCEPTS
+-------------------------
+
+A) Express App Basics
+- app instance
+- routing and middleware as the core model
+- req/res lifecycle
+
+B) Request/Response Objects
+- req.params, req.query, req.body
+- req.headers, req.cookies (via middleware)
+- res.status, res.json, res.send, res.set
+- res.locals usage
+
+C) Routing
+- route parameters
+- route grouping
+- router instances
+- route ordering importance
+- 404 handling
+
+Skill Checkpoints
+- Can design route structure that scales
+- Can explain middleware order effects precisely
+
+------------------------------------------------------------
+
+3.2 MIDDLEWARE (THE HEART OF EXPRESS)
+-------------------------------------
+
+A) Middleware Types
+- application-level
+- router-level
+- error-handling middleware (4 args)
+- built-in vs third-party
+
+B) Common Middleware You Must Master
+- body parsing (json/urlencoded)
+- cookie parsing
+- CORS middleware configuration
+- security headers middleware concept
+- compression concept
+- rate limiting concept
+- request logging middleware concept
+
+C) Building Custom Middleware
+- attaching data to req/res.locals
+- early returns
+- async middleware + error propagation
+
+Skill Checkpoints
+- Can implement auth middleware + role checks cleanly
+- Can implement validation middleware per route
+
+------------------------------------------------------------
+
+3.3 ERROR HANDLING IN EXPRESS (PROPER WAY)
+------------------------------------------
+
+A) Centralized Error Handler
+- consistent formatting
+- mapping known errors → status codes
+- unknown errors → 500 with safe message
+
+B) Async Errors
+- how async errors travel to error middleware
+- patterns to avoid try/catch repetition (wrapper functions concept)
+
+C) Operational Safety
+- don’t leak stack traces in production
+- return requestId to help debugging
+
+Skill Checkpoints
+- Can guarantee every error becomes a correct HTTP response
+- Can provide field-level validation errors consistently
+
+------------------------------------------------------------
+
+3.4 API DESIGN IN EXPRESS (REST IMPLEMENTATION)
+------------------------------------------------
+
+A) Controllers/Handlers
+- keep route handlers thin
+- delegate business logic to services
+
+B) Request Validation
+- validate:
+  - body
+  - query
+  - params
+- reject unknown fields if desired
+- consistent error responses
+
+C) Pagination/Filtering/Sorting Implementation
+- parse + validate query params
+- default limits and max limits
+- stable sorting requirements
+
+D) Content Types & Negotiation (awareness + practical)
+- JSON responses by default
+- handle unsupported Content-Type with 415
+
+Skill Checkpoints
+- Can implement a full CRUD module with clean layers
+- Can enforce safe query limits and filtering rules
+
+------------------------------------------------------------
+
+3.5 AUTH IN EXPRESS (COMMON PATTERNS)
+-------------------------------------
+
+A) Sessions (Cookie-Based)
+- session store concepts (memory store vs persistent store)
+- cookie flags and secure configuration
+- CSRF concept with cookies
+
+B) JWT (Token-Based)
+- access token validation middleware
+- token expiry handling
+- refresh token strategy concept
+
+C) Authorization Enforcement
+- RBAC middleware
+- ownership checks (resource-level)
+
+Skill Checkpoints
+- Can secure auth flows without common mistakes (401/403 correctness)
+- Can protect sensitive routes properly
+
+------------------------------------------------------------
+
+3.6 FILE UPLOADS + STATIC + STREAMING
+-------------------------------------
+
+A) File Upload Handling
+- multipart/form-data concept
+- validation: size limits, type checks
+- storage options: local vs cloud concept
+- security: path traversal, malware scanning concept
+
+B) Serving Static Files
+- express.static
+- caching headers
+
+C) Streaming Responses
+- streaming large downloads
+- range requests concept (awareness)
+
+Skill Checkpoints
+- Can handle uploads safely with strict limits
+- Can stream without crashing memory
+
+------------------------------------------------------------
+
+3.7 SECURITY HARDENING FOR EXPRESS APIS
+---------------------------------------
+
+A) Common Web Risks (Know how Express apps face them)
+- XSS (mainly frontend but API can amplify)
+- CSRF (important with cookie sessions)
+- SQL/NoSQL injection (via unvalidated input)
+- Prototype pollution (awareness)
+- SSRF (awareness)
+- Path traversal
+- Rate-limit abuse
+
+B) Security Practices
+- input validation and sanitization
+- safe error messages
+- strict CORS allowlist
+- security headers concept
+- HTTPS enforcement concept
+- secrets management concept
+
+Skill Checkpoints
+- Can list the top risks for an API and how your middleware stack addresses them
+- Can prevent common injection vectors with strict validation
+
+------------------------------------------------------------
+
+3.8 TESTING + QUALITY (EXPRESS CONTEXT)
+---------------------------------------
+
+A) Testing Layers (concept map)
+- unit tests (services/utils)
+- integration tests (routes + middleware)
+- e2e tests (full app + DB)
+
+B) What to Test in Express
+- success cases
+- validation failures (400/422)
+- auth failures (401)
+- permission failures (403)
+- not found (404)
+- rate limit (429)
+- server errors (500) without leaking internals
+
+Skill Checkpoints
+- Can test routes with predictable, isolated setups
+- Can assert correct status codes + error shapes
+
+------------------------------------------------------------
+
+3.9 DEPLOYMENT-READINESS (EXPRESS APP BEHAVIOR)
+-----------------------------------------------
+
+A) Environment Configuration
+- dev vs production config behavior
+- environment variables and validation of env config
+
+B) Production Concerns
+- trust proxy setting (behind load balancer)
+- graceful shutdown (close server, drain connections)
+- health check endpoints (/health)
+- readiness checks concept (DB connectivity)
+
+C) Monitoring Concepts
+- request duration logging
+- error rate monitoring concept
+- basic metrics concept (RPS, latency percentiles)
+
+Skill Checkpoints
+- Can run Express reliably behind a reverse proxy
+- Can shut down without dropping important in-flight work
+
+====================================================================
+4) CAPSTONE COMPETENCY MAP (WHAT “MASTER” MEANS)
+====================================================================
+
+A) API Design Mastery
+- Consistent REST endpoints and error responses
+- Pagination/filtering/sorting with safe constraints
+- Correct status codes and semantics
+
+B) Node Mastery
+- Event loop understanding and avoiding blocking
+- Streams for large data
+- Robust async error handling
+- Graceful shutdown + production safety
+
+C) Express Mastery
+- Middleware architecture (auth, validation, errors, logging)
+- Secure CORS configuration (including credentials)
+- Clean layering (routes/controllers/services/data)
+- Testability and predictable behavior
+
+D) Security + Reliability
+- Strong validation everywhere
+- Auth + authorization correctly separated
+- Secure cookie/token handling
+- Rate limiting + safe headers + safe error messages
+
+END

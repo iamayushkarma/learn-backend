@@ -1,0 +1,475 @@
+DEPLOYMENT + CLOUD + CI/CD + MONITORING + QUEUES ROADMAP
+=======================================================
+
+0) HOW TO USE THIS ROADMAP
+--------------------------
+- This is a structured topic map (what to master + what you should be able to do).
+- No study plan, no timelines—only concepts and competency checkpoints.
+
+====================================================================
+1) DEPLOYMENT FOUNDATIONS
+====================================================================
+
+1.1 ENVIRONMENT VARIABLES + CONFIG MANAGEMENT
+---------------------------------------------
+
+A) Why Env Vars Exist
+- separate config from code
+- avoid committing secrets
+- allow dev/staging/prod differences
+
+B) What Goes Into Env Vars
+- PORT, NODE_ENV
+- DB connection string
+- Redis URL
+- JWT secrets / session secrets
+- API keys (email, storage, payments)
+- allowed CORS origins
+- base URLs, webhook secrets
+
+C) Safe Practices
+- never log secrets
+- never commit .env to git
+- maintain .env.example with placeholder keys
+- validate required env vars on startup (fail fast)
+- rotate secrets when leaked
+
+D) Environment Separation
+- development vs staging vs production
+- different DBs per environment
+- feature flags concept (optional)
+
+Skill Checkpoints
+- Can boot the app only if required env vars exist
+- Can safely manage secrets across dev/staging/prod
+
+------------------------------------------------------------
+
+1.2 DOCKER BASICS (BACKEND ESSENTIAL)
+-------------------------------------
+
+A) Core Docker Concepts
+- image vs container
+- Dockerfile builds an image
+- container runs the image
+- layers and caching
+- volumes (persist data)
+- networks (containers talking)
+
+B) Common Dockerfile Patterns (concepts)
+- base images (node:alpine vs node:slim)
+- working directory
+- copy package files first for layer caching
+- install dependencies
+- copy source
+- expose port
+- CMD vs ENTRYPOINT
+- multi-stage builds (build stage vs runtime stage)
+
+C) Node.js Docker Considerations
+- production dependencies only
+- keep image small
+- handle graceful shutdown (SIGTERM)
+- health check endpoint exists for orchestration
+
+D) docker-compose Concepts (local dev & multi-service)
+- services: api, db (postgres), redis
+- shared network
+- environment vars and .env
+- volume for DB persistence
+- depends_on (awareness: not a readiness check)
+
+E) Common Docker Mistakes
+- baking secrets into image
+- using root user (security best practice: run as non-root where possible)
+- forgetting to bind to 0.0.0.0 inside container
+- not handling SIGTERM (containers stop abruptly)
+
+Skill Checkpoints
+- Can containerize Node/Express API
+- Can run API + Postgres + Redis locally via compose
+- Can explain image layering + why builds are slow/fast
+
+------------------------------------------------------------
+
+1.3 REVERSE PROXY (NGINX) BASICS
+--------------------------------
+
+A) What a Reverse Proxy Does
+- accepts internet traffic
+- routes traffic to your app
+- handles TLS termination (HTTPS)
+- can serve static files
+- can add security headers
+- can do load balancing (advanced)
+
+B) Typical Nginx Responsibilities
+- proxy_pass to Node server
+- set headers:
+  - Host
+  - X-Forwarded-For
+  - X-Forwarded-Proto
+- timeouts:
+  - proxy_read_timeout
+  - proxy_connect_timeout
+- request size limits for uploads
+- gzip compression (optional)
+
+C) Common Patterns
+- one domain → one Node app
+- one domain → multiple routes:
+  - /api → Node
+  - / → frontend static
+- WebSockets proxying (awareness)
+
+D) Important App Config When Behind Proxy
+- “trust proxy” setting in Express (so req.ip, secure cookies work properly)
+- correct absolute URLs and redirects
+
+Skill Checkpoints
+- Can set up Nginx to forward traffic to Node app reliably
+- Can explain “trust proxy” and why HTTPS detection can break without it
+
+------------------------------------------------------------
+
+1.4 HTTPS (TLS) BASICS (NON-NEGOTIABLE)
+---------------------------------------
+
+A) Why HTTPS Matters
+- encryption, integrity, authenticity
+- prevents MITM and cookie theft over plain HTTP
+
+B) Certificates (Practical Understanding)
+- certificate + private key
+- CA chain (Let’s Encrypt is common)
+- renewal and expiration awareness
+
+C) HTTPS Setup Concepts
+- TLS termination at:
+  - Nginx (common)
+  - cloud platform (Render/Railway/Fly)
+- redirect HTTP → HTTPS
+- HSTS concept (strict transport)
+
+D) Cookie & Auth Implications
+- Secure cookies require HTTPS
+- SameSite=None requires Secure
+- mixed content issues (frontend calling http API)
+
+Skill Checkpoints
+- Can deploy with HTTPS and keep auth cookies working
+- Can explain why cookies break on HTTP or misconfigured proxies
+
+====================================================================
+2) CLOUD BASICS (PICK ONE PLATFORM) + OBJECT STORAGE
+====================================================================
+
+2.1 PICK-ONE CLOUD DEPLOYMENT MODELS
+------------------------------------
+
+A) Managed App Platforms (Easiest)
+- Render / Railway / Fly.io:
+  - deploy from Git repo
+  - set env vars in dashboard
+  - managed TLS
+  - logs in dashboard
+  - auto deploy on push
+
+B) VM-Based (More Control)
+- AWS EC2 (or similar):
+  - you manage OS, firewall, Nginx, Docker
+  - more responsibility: updates, security, monitoring
+  - flexible and industry-relevant
+
+C) What You Must Understand Regardless of Platform
+- build step vs run step
+- runtime environment variables
+- port binding rules (platform assigns port or expects one)
+- persistent storage vs ephemeral filesystem
+- scaling basics:
+  - vertical scaling (bigger machine)
+  - horizontal scaling (more instances)
+
+Skill Checkpoints
+- Can deploy API from Git with env vars configured
+- Can connect deployed API to managed DB and Redis
+
+------------------------------------------------------------
+
+2.2 DATABASE + REDIS IN THE CLOUD (CORE OPERATIONS)
+---------------------------------------------------
+
+A) Managed Postgres/MySQL Concepts
+- connection strings
+- SSL requirements (often required in cloud)
+- connection pooling
+- migrations in production (safe change discipline)
+
+B) Managed Redis Concepts
+- URL + password auth
+- TLS connections (often recommended)
+- memory limits, eviction policy awareness
+
+Skill Checkpoints
+- Can wire app to cloud DB/Redis securely
+- Can diagnose “works locally but not in cloud” connection problems
+
+------------------------------------------------------------
+
+2.3 OBJECT STORAGE (S3-LIKE) — IMPORTANT FOR FILES
+--------------------------------------------------
+
+A) Why Object Storage
+- app containers/servers often have ephemeral disks
+- store files in durable storage
+- serve/download files reliably
+
+B) Key Concepts
+- bucket
+- object key (path-like)
+- metadata (content-type)
+- access models:
+  - public bucket (often not recommended)
+  - private bucket + signed URLs (recommended for user files)
+
+C) Upload Patterns
+- server-side upload:
+  - API receives file → uploads to storage
+- direct-to-storage upload:
+  - API gives signed URL → client uploads directly
+  - reduces API load and improves speed
+
+D) Security Practices
+- validate file type and size before storage (or at least before making accessible)
+- avoid trusting filename
+- use random keys
+- access control per user (private objects + signed URLs)
+- virus scanning concept (if needed)
+
+Skill Checkpoints
+- Can store uploads in S3-like storage with private access
+- Can generate signed URLs and control access
+
+====================================================================
+3) CI/CD BASICS (GITHUB ACTIONS) + TESTS IN PIPELINE
+====================================================================
+
+3.1 CI VS CD (CLEAR DEFINITIONS)
+--------------------------------
+- CI (Continuous Integration):
+  - run checks automatically on PR/push (tests, lint, build)
+- CD (Continuous Delivery/Deployment):
+  - automatically deploy after CI passes (optional)
+
+------------------------------------------------------------
+
+3.2 GITHUB ACTIONS FUNDAMENTALS
+-------------------------------
+
+A) Workflow Anatomy
+- triggers:
+  - push to main
+  - pull_request
+- jobs and steps
+- runners (ubuntu-latest commonly)
+- caching dependencies (npm cache)
+- secrets usage (never hardcode secrets)
+
+B) Typical Node.js CI Steps
+- checkout repo
+- setup node version
+- install dependencies
+- run lint
+- run tests
+- build (if needed)
+
+C) Running Tests That Require Services
+- use service containers in GitHub Actions:
+  - Postgres service
+  - Redis service
+- set env vars for test DB
+- run migrations before tests (if needed)
+- ensure tests are isolated and repeatable
+
+D) Artifacts (awareness)
+- upload test reports, coverage reports
+
+Skill Checkpoints
+- Can run backend tests on every PR
+- Can spin up Postgres/Redis in CI and run integration tests
+
+------------------------------------------------------------
+
+3.3 DEPLOYMENT AUTOMATION (CD OPTIONS)
+--------------------------------------
+
+A) Platform Auto-Deploy (Simple)
+- connect GitHub repo
+- deploy on push to main
+- CI still runs in GitHub, platform deploy runs after merge
+
+B) GitHub Actions Deploy (More Control)
+- after CI passes, trigger deploy step:
+  - call platform deploy hook
+  - or ssh into server (EC2) and restart containers
+- environment protection rules (approvals) concept
+
+C) Deployment Safety Concepts
+- run DB migrations carefully
+- rollbacks plan (previous image/version)
+- health checks after deploy
+
+Skill Checkpoints
+- Can set up “tests must pass before deploy”
+- Can roll back to last known good deployment (concept-level)
+
+====================================================================
+4) MONITORING BASICS (LOGS, METRICS, ALERT MINDSET)
+====================================================================
+
+4.1 LOGGING (MUST-HAVE)
+-----------------------
+
+A) Structured Logs
+- JSON logs preferred
+- include:
+  - timestamp
+  - level
+  - message
+  - requestId
+  - route
+  - statusCode
+  - duration
+  - userId (optional; be careful)
+- never log secrets (tokens/passwords)
+
+B) Request Logging
+- log every request summary (method/path/status/latency)
+- log errors with stack traces (server-side)
+
+C) Log Aggregation Concept
+- cloud platform logs
+- centralized logs (ELK, Loki, Datadog concept)
+
+Skill Checkpoints
+- Can debug issues from logs alone using requestId
+- Can prevent sensitive data leaks in logs
+
+------------------------------------------------------------
+
+4.2 METRICS (BASIC BUT POWERFUL)
+--------------------------------
+
+A) Key Metrics for APIs
+- RPS (requests per second)
+- latency (p50/p95/p99)
+- error rate (4xx vs 5xx)
+- DB query latency
+- cache hit rate (if using Redis)
+- queue length (if background jobs)
+
+B) Health Checks
+- liveness: “process is alive”
+- readiness: “can serve traffic” (DB/Redis reachable)
+- /health and /ready endpoints concept
+
+C) Dashboards (concept)
+- track trends, detect regressions after deploys
+
+Skill Checkpoints
+- Can define what “healthy” means for the service
+- Can detect a regression from increased p95 latency or 5xx rate
+
+------------------------------------------------------------
+
+4.3 ALERT MINDSET (WHAT TO PAGE ON)
+-----------------------------------
+
+A) What Should Trigger Alerts (practical)
+- 5xx error rate spikes
+- p95 latency above threshold
+- DB connection failures
+- queue backlog growing continuously
+- disk/memory pressure (VM-based deployments)
+
+B) What Should NOT Page You Constantly
+- small 4xx increases (often client behavior)
+- single sporadic error (unless critical)
+
+C) Incident Response Basics (concept)
+- identify scope
+- rollback if caused by deploy
+- mitigate (rate limit, disable feature flag, scale)
+- postmortem mindset (fix root cause)
+
+Skill Checkpoints
+- Can define alert rules that catch real failures without noise
+- Can perform quick rollback and verify recovery
+
+====================================================================
+5) MESSAGE QUEUES (OPTIONAL) — REDIS QUEUE IS FINE TO START
+====================================================================
+
+5.1 WHY QUEUES EXIST
+--------------------
+- move heavy work out of request/response path
+- smooth traffic spikes
+- retry failures safely
+- isolate unreliable external dependencies
+
+------------------------------------------------------------
+
+5.2 QUEUE CONCEPTS (MUST KNOW)
+------------------------------
+
+A) Jobs and Workers
+- producer enqueues job
+- worker consumes job and executes
+- acknowledgement (job completed)
+
+B) Retry and Backoff
+- retry on transient errors
+- exponential backoff concept
+- dead-letter queue concept (failed after N retries)
+
+C) Idempotency (critical)
+- job may run more than once
+- ensure repeated execution does not create duplicates
+- use idempotency keys or DB constraints
+
+D) Job State Tracking (concept)
+- queued, active, completed, failed
+- expose job status to clients when needed
+
+Skill Checkpoints
+- Can design background tasks that are safe under retries
+- Can guarantee jobs don’t double-charge / double-send emails
+
+------------------------------------------------------------
+
+5.3 REDIS-BASED QUEUES (PRACTICAL START)
+----------------------------------------
+
+A) Patterns in Redis
+- list-based queues (LPUSH/RPOP) (basic concept)
+- streams (more advanced concept)
+- use a battle-tested library in real apps (concept)
+
+B) Use Cases
+- email sending
+- image processing
+- report generation
+- webhook retries
+- exporting data
+
+C) Operational Concerns
+- worker concurrency
+- job timeouts
+- monitoring queue length
+- graceful shutdown for workers
+
+Skill Checkpoints
+- Can run separate worker process alongside API
+- Can monitor queue backlog and adjust concurrency
+
+END

@@ -1,0 +1,474 @@
+AUTHENTICATION, SECURITY, ADVANCED API, CACHING & PERFORMANCE ROADMAP
+====================================================================
+
+0) HOW TO USE THIS ROADMAP
+--------------------------
+- This is a structured topic map (what to master + what you should be able to do).
+- No study plan, no timelines—only concepts and competency checkpoints.
+
+====================================================================
+4) AUTHENTICATION & SECURITY (NON-NEGOTIABLE)
+====================================================================
+
+4.1 PASSWORDS (HASHING + SALTING DONE RIGHT)
+--------------------------------------------
+
+A) Hashing vs Encryption (must be clear)
+- Hashing: one-way (password storage)
+- Encryption: reversible (not for password storage)
+
+B) Salting (what it really means)
+- Unique random salt per password
+- Prevents rainbow-table reuse
+- Stops identical passwords from having identical hashes
+
+C) Password Hashing Algorithms
+- bcrypt:
+  - cost factor (work factor)
+  - widely used, battle-tested
+- argon2:
+  - designed to be memory-hard
+  - variants: argon2id commonly recommended
+- Why NOT:
+  - sha256/MD5 (too fast, unsafe for passwords)
+
+D) Password Handling Practices
+- Never store plaintext
+- Never log passwords
+- Enforce password policy (length > complexity)
+- Use constant-time comparisons for secrets (concept-level)
+- Account lockouts / throttling to prevent brute force
+
+Skill Checkpoints
+- Can explain why “fast hashes” are insecure for passwords
+- Can implement secure password storage and verification
+- Can add brute-force protection without locking out legit users too easily
+
+------------------------------------------------------------
+
+4.2 JWT (ACCESS TOKENS) + REFRESH TOKENS
+----------------------------------------
+
+A) What JWT Is
+- A signed token containing claims
+- Stateless verification (server can verify signature without DB lookup, depending on design)
+
+B) JWT Anatomy (awareness + practical)
+- header, payload, signature
+- standard claims:
+  - sub, iss, aud, exp, iat
+- keep payload small; never store secrets in payload
+
+C) Pros / Cons of JWT
+Pros
+- Works well for APIs, mobile, multi-service setups
+- Easy horizontal scaling (less session state)
+Cons
+- Revocation is hard (if fully stateless)
+- Token theft can be damaging until expiry
+- Misconfigurations are common (weak secrets, long expiry)
+
+D) Refresh Tokens (why they exist)
+- Short-lived access token + long-lived refresh token
+- Rotate refresh tokens (recommended pattern)
+- Store refresh tokens securely (httpOnly cookies or secure storage strategy)
+- Revocation/invalidation strategy:
+  - store refresh token identifiers in DB
+  - rotate on each use
+  - detect reuse (token theft detection pattern)
+
+E) Common JWT Mistakes (must avoid)
+- Long access token expiry
+- Storing JWT in localStorage without understanding risks
+- Not validating issuer/audience where relevant
+- “alg=none” vulnerabilities (avoid by using reputable libs)
+- Not handling clock skew or exp properly
+
+Skill Checkpoints
+- Can design access/refresh token flows with rotation
+- Can explain revocation strategies and tradeoffs
+- Can secure tokens against common theft vectors
+
+------------------------------------------------------------
+
+4.3 SESSIONS + COOKIES (STATEFUL AUTH)
+--------------------------------------
+
+A) Session-Based Auth Basics
+- Session id stored in cookie
+- Server stores session data (memory store vs persistent store)
+- Session invalidation (logout) is straightforward
+
+B) Secure Cookie Flags (must know)
+- HttpOnly: JS can’t read cookie (reduces XSS token theft)
+- Secure: cookie only over HTTPS
+- SameSite:
+  - Lax (good default for many apps)
+  - Strict (more protective, can break flows)
+  - None (needed for cross-site cookies; requires Secure)
+- Domain, Path, Max-Age/Expires
+
+C) CSRF and Cookies (important link)
+- Cookies are automatically sent by browser
+- CSRF protection strategies (high-level):
+  - SameSite cookies
+  - CSRF tokens
+  - double-submit cookie pattern (awareness)
+
+D) Session Stores (concept-level)
+- in-memory store is not for production
+- persistent store for scale (often Redis or DB-backed)
+
+Skill Checkpoints
+- Can configure cookies safely for production HTTPS
+- Can explain and implement CSRF defenses for cookie auth
+- Can manage session lifecycle (login/logout/expiry) correctly
+
+------------------------------------------------------------
+
+4.4 OWASP BASICS (TOP RISKS YOU MUST RECOGNIZE)
+-----------------------------------------------
+
+A) XSS (Cross-Site Scripting)
+- What it is: attacker runs JS in victim’s browser
+- How APIs contribute:
+  - returning unsafe HTML
+  - reflecting user input without escaping
+  - storing and serving unsanitized content
+- Defenses:
+  - output encoding on frontend
+  - sanitize rich text input (if allowed)
+  - Content Security Policy (CSP) concept
+  - HttpOnly cookies (reduces cookie theft impact)
+
+B) CSRF (Cross-Site Request Forgery)
+- What it is: victim’s browser performs unwanted action with cookies attached
+- When it matters: cookie-based auth
+- Defenses:
+  - SameSite cookies
+  - CSRF tokens
+  - check Origin/Referer for sensitive requests (supporting defense)
+
+C) SQL Injection (SQLi)
+- What it is: attacker alters queries by injecting SQL
+- Defenses:
+  - parameterized queries / prepared statements
+  - strict input validation (especially for dynamic filters/sorts)
+  - allowlist columns for ORDER BY (never interpolate raw user strings)
+
+D) SSRF (Server-Side Request Forgery)
+- What it is: attacker makes your server request internal/private resources
+- High-risk areas:
+  - “fetch URL” endpoints
+  - image upload by URL, webhooks testing tools
+- Defenses:
+  - allowlist domains
+  - block private IP ranges
+  - restrict protocols (http/https only)
+  - timeouts, size limits
+  - DNS rebinding awareness (advanced)
+
+E) Rate Limiting (abuse prevention)
+- Protect login endpoints, OTP, expensive routes
+- Per-IP and per-user strategies
+- Penalties/backoff for repeated failures
+
+Skill Checkpoints
+- Can identify whether a feature introduces XSS/CSRF/SQLi/SSRF risks
+- Can apply the right defense for each risk, not generic “security”
+
+------------------------------------------------------------
+
+4.5 INPUT VALIDATION + SANITIZATION
+-----------------------------------
+
+A) Validation (correctness + security)
+- validate:
+  - body, query, params, headers
+- reject unexpected fields (optional but strong)
+- validate types, lengths, formats (email, uuid), ranges
+- enforce max limits for lists and pagination
+
+B) Sanitization (cleaning input)
+- trimming whitespace
+- escaping or stripping dangerous HTML (only if you accept rich text)
+- canonicalizing data (lowercasing emails, etc.)
+
+C) Validation is NOT enough alone
+- still use parameterized queries
+- still enforce authorization checks
+
+Skill Checkpoints
+- Can design strict schemas for every endpoint
+- Can produce consistent validation errors without leaking internals
+
+------------------------------------------------------------
+
+4.6 FILE UPLOAD SECURITY (BASICS YOU MUST DO)
+---------------------------------------------
+
+A) Main Risks
+- huge files (DoS)
+- dangerous file types (scripts/executables)
+- MIME spoofing (fake content-type)
+- path traversal (writing outside upload directory)
+- malware content
+
+B) Core Defenses
+- hard size limits
+- allowlist file types (by content sniffing, not only filename)
+- randomize filenames; never trust original name
+- store outside web root (or use signed URLs / controlled serving)
+- scan files (baseline: virus scanning concept)
+- rate limit upload endpoints
+- image processing safety (avoid executing metadata; strip EXIF if needed)
+
+Skill Checkpoints
+- Can implement strict upload constraints and safe storage
+- Can explain why “checking extension only” is insecure
+
+====================================================================
+5) ADVANCED API SKILLS
+====================================================================
+
+5.1 ERROR HANDLING + CONSISTENT API RESPONSES
+---------------------------------------------
+
+A) Consistency Rules
+- Same error shape across the API
+- Correct status codes (400/401/403/404/409/422/429/500)
+- Do not leak stack traces in production
+- Provide a requestId/traceId for debugging
+
+B) Error Categories
+- validation errors
+- authentication errors
+- authorization errors
+- business rule errors (e.g., insufficient balance)
+- conflicts (unique constraint / state conflict)
+- upstream service errors (timeouts, 502-like behavior)
+
+C) “Contract” for Success Responses
+- consistent response structure
+- pagination metadata standard
+- consistent date formats (ISO 8601)
+- stable field names and types
+
+Skill Checkpoints
+- Can guarantee every failure becomes a predictable response
+- Can map DB/ORM errors into stable API-level errors
+
+------------------------------------------------------------
+
+5.2 LOGGING + REQUEST TRACING
+-----------------------------
+
+A) Logging Fundamentals
+- structured logs (key-value / JSON)
+- log levels (debug/info/warn/error)
+- avoid logging secrets (tokens, passwords)
+
+B) Request Tracing
+- correlation ID per request (requestId)
+- include requestId in logs and error responses
+- propagate trace headers across services (concept-level)
+
+C) What to Log
+- request method/path/status
+- latency
+- userId (if authenticated; be careful)
+- error codes + stack traces (server-side only)
+- upstream call latency/failures (if applicable)
+
+Skill Checkpoints
+- Can trace a user-reported issue from requestId → logs → root cause
+- Can keep logs useful without leaking sensitive data
+
+------------------------------------------------------------
+
+5.3 API VERSIONING
+------------------
+
+A) Why Version
+- avoid breaking existing clients
+- allow controlled migrations
+
+B) Versioning Approaches
+- URL versioning: /api/v1 (most common)
+- header-based versioning (awareness)
+- media type versioning (awareness)
+
+C) Deprecation Strategy (concept-level)
+- announce deprecation
+- support overlap period
+- remove old version with clear timeline (outside roadmap scope)
+
+Skill Checkpoints
+- Can design a versioning approach that scales
+- Can keep backwards compatibility for critical routes
+
+------------------------------------------------------------
+
+5.4 API DOCS: OPENAPI / SWAGGER
+-------------------------------
+
+A) What Good API Docs Contain
+- endpoint list + methods
+- request schemas
+- response schemas
+- auth requirements
+- error responses and codes
+- pagination/filtering conventions
+- examples
+
+B) OpenAPI Basics
+- paths, components (schemas)
+- security schemes (bearer, apiKey, cookie-based concept)
+- versioning and tags for grouping endpoints
+
+Skill Checkpoints
+- Can produce accurate docs that match real behavior
+- Can document edge cases (validation errors, 401/403, conflicts)
+
+------------------------------------------------------------
+
+5.5 RATE LIMITING + CACHING HEADERS
+-----------------------------------
+
+A) Rate Limiting Strategies
+- per-IP, per-user, per-route
+- sliding window vs fixed window (concept)
+- separate strict rules for:
+  - login/otp
+  - file uploads
+  - expensive endpoints
+- return 429 + Retry-After (optional)
+
+B) HTTP Caching Headers (API-side)
+- Cache-Control (public/private/no-store/max-age)
+- ETag + If-None-Match
+- Last-Modified + If-Modified-Since
+- When NOT to cache:
+  - personalized responses
+  - sensitive data without proper controls
+
+Skill Checkpoints
+- Can protect endpoints from brute force and scraping
+- Can implement correct caching for safe GET responses
+
+------------------------------------------------------------
+
+5.6 GRAPHQL BASICS (OPTIONAL, BUT USEFUL)
+-----------------------------------------
+
+A) Core Concepts
+- schema, types, queries, mutations
+- resolvers
+- client selects fields (overfetch/underfetch solved)
+
+B) Common Problems
+- N+1 resolver issues
+- caching complexity
+- authorization per field/resolver
+- query depth/complexity attacks
+
+C) Practical Safety Controls
+- query depth limits
+- complexity limits
+- persisted queries concept
+
+Skill Checkpoints
+- Can explain when GraphQL is worth it vs REST
+- Can build a safe GraphQL API that avoids N+1 patterns
+
+====================================================================
+6) CACHING + PERFORMANCE
+====================================================================
+
+6.1 REDIS (CACHING, SESSIONS, QUEUES, RATE LIMITING)
+-----------------------------------------------------
+
+A) Redis Basics
+- in-memory key-value store
+- data structures:
+  - strings, hashes, lists, sets, sorted sets
+- TTL expiration
+
+B) Caching Patterns
+- cache-aside (lazy loading):
+  - read from cache
+  - on miss, read DB, write cache
+- write-through / write-behind (awareness)
+- cache invalidation strategies:
+  - TTL-only
+  - explicit invalidation on writes
+  - versioned keys
+
+C) Sessions in Redis
+- session id → session data mapping
+- TTL tied to session expiry
+- scaling benefit over in-memory sessions
+
+D) Queues / Background Jobs with Redis
+- job enqueue and worker consumption
+- retries, backoff, dead-letter concept
+- idempotency for jobs
+
+E) Rate Limiting with Redis
+- token bucket / sliding window concept
+- per-key limits (IP, userId)
+- fast atomic increments with expiry
+
+Skill Checkpoints
+- Can implement cache-aside safely with correct TTL and invalidation
+- Can use Redis for session storage and rate limiting reliably
+- Can build a background job pipeline with retries and idempotency thinking
+
+------------------------------------------------------------
+
+6.2 PERFORMANCE THINKING (BACKEND REALITY CHECKLIST)
+-----------------------------------------------------
+
+A) Avoid N+1 Queries
+- recognize N+1 pattern:
+  - 1 query for list
+  - N queries for related data per item
+- fixes:
+  - joins (SQL)
+  - eager loading (ORM include)
+  - batching
+  - DataLoader pattern (GraphQL context)
+
+B) Use Indexes (and verify)
+- index hot filters and join keys
+- composite indexes for common query patterns
+- confirm with EXPLAIN (SQL) / query planner tools (concept)
+
+C) Pagination (non-negotiable for lists)
+- enforce max page size
+- keyset pagination for stability on large tables
+- validate sort fields (allowlist)
+
+D) Background Jobs for Heavy Tasks
+- move heavy/slow tasks off request path:
+  - email sending
+  - video/image processing
+  - report generation
+  - large imports/exports
+- return async status:
+  - 202 Accepted + job id
+  - polling endpoint or webhook (concept)
+- ensure job idempotency (retries won’t duplicate side effects)
+
+E) General “API Speed” Habits
+- reduce payload sizes (select only needed fields)
+- compress responses when appropriate (concept)
+- cache safe GET responses
+- apply timeouts to upstream calls
+- protect expensive endpoints with rate limits
+
+Skill Checkpoints
+- Can diagnose slowness into: DB, network, CPU, payload, or upstream dependency
+- Can redesign endpoints to scale: pagination + indexes + caching + async jobs
+
+END
