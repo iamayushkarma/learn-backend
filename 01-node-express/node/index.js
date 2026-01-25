@@ -20,6 +20,22 @@ const server = http
       </html>`,
       );
     } else if (req.url === "/message" && req.method === "POST") {
+      const body = [];
+      req.on("data", (chunk) => {
+        console.log(chunk);
+        body.push(chunk);
+      });
+      req.on("end", () => {
+        const data = Buffer.concat(body).toString();
+        const objData = new URLSearchParams(data);
+        const bodyObj = Object.fromEntries(objData);
+
+        // for (const [key, value] of objData.entries()) {
+        //   bodyObj[key] = value;
+        // }
+
+        console.log(bodyObj);
+      });
       res.setHeader("Location", "/message");
       res.write(
         `<html><head><title>Node</title></head><body><h1>message</h1></body></html>`,
