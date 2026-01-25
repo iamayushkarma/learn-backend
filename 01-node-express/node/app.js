@@ -1,5 +1,4 @@
 const reqHandler = require("./index.js");
-
 const http = require("http");
 const PORT = 5000;
 
