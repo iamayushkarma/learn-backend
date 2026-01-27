@@ -2,50 +2,51 @@ const express = require("express");
 const users = require("../data/MOCK_DATA.json");
 const fs = require("fs");
 const path = require("path");
+const User = require("../db/userSchema");
 
 const router = express.Router();
 const filePath = path.join(__dirname, "../data/MOCK_DATA.json");
 
 router
   .route("/")
-  .get((req, res) => {
+  .get(async (req, res) => {
+    const users = await User.find({});
     return res.json(users);
   })
-  .post((req, res) => {
+  .post(async (req, res) => {
     const body = req.body;
+    if (!body || !body.name || !body.age || !body.email) {
+      return res.status(400).json({ message: "All feilds are required" });
+    }
     users.push({ ...body, id: users.length + 1 });
-    fs.writeFile(filePath, JSON.stringify(users), (error, data) => {
-      res.json({ status: "success", id: users.length });
+    // fs.writeFile(filePath, JSON.stringify(users), (error, data) => {
+    //   res.status(201).json({ status: "success", id: users.length });
+    // });
+    const createdUser = await User.create({
+      name: body.name,
+      age: body.age,
+      email: body.email,
     });
-    return;
+    console.log(createdUser);
+    return res.status(201).json({ message: "user created successfully!" });
   });
 
 // :id special route parameter from express
 router
   .route("/:id")
-  .get((req, res) => {
-    const id = Number(req.params.id);
-    const user = users.find((user) => user.id == id);
+  .get(async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "user not found" });
     return res.json(user);
   })
-  .patch((req, res) => {
-    //Todo update user
-    return res.json({ status: "pending" });
+  .patch(async (req, res) => {
+    await User.findByIdAndUpdate(req.params.id, { email: "apple@.com" });
+    return res.status(301).json({ message: "details updates" });
   })
-  .delete((req, res) => {
-    const id = Number(req.params.id);
-    const index = users.findIndex((user) => user.id == id);
-    if (index === -1) {
-      return res.status(404).json({ status: "user not found" });
-    }
-    users.splice(index, 1);
-    fs.writeFile(filePath, JSON.stringify(users, null, 2), (err) => {
-      if (err) {
-        return res.status(500).json({ status: "error saving file" });
-      }
-
-      res.json({ status: "deleted successfully", id });
-    });
+  .delete(async (req, res) => {
+    const id = req.params.id;
+    await User.findByIdAndDelete(id);
+    res.status(200).json({ status: "deleted successfully", id });
   });
 
 module.exports = router;
