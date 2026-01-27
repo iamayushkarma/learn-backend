@@ -1,8 +1,10 @@
 const express = require("express");
 const users = require("../data/MOCK_DATA.json");
 const fs = require("fs");
+const path = require("path");
 
 const router = express.Router();
+const filePath = path.join(__dirname, "../data/MOCK_DATA.json");
 
 router
   .route("/")
@@ -12,13 +14,9 @@ router
   .post((req, res) => {
     const body = req.body;
     users.push({ ...body, id: users.length + 1 });
-    fs.writeFile(
-      "./data/MOCK_DATA.json",
-      JSON.stringify(users),
-      (error, data) => {
-        res.json({ status: "success", id: users.length });
-      },
-    );
+    fs.writeFile(filePath, JSON.stringify(users), (error, data) => {
+      res.json({ status: "success", id: users.length });
+    });
     return;
   });
 
@@ -41,17 +39,13 @@ router
       return res.status(404).json({ status: "user not found" });
     }
     users.splice(index, 1);
-    fs.writeFile(
-      "./data/MOCK_DATA.json",
-      JSON.stringify(users, null, 2),
-      (err) => {
-        if (err) {
-          return res.status(500).json({ status: "error saving file" });
-        }
+    fs.writeFile(filePath, JSON.stringify(users, null, 2), (err) => {
+      if (err) {
+        return res.status(500).json({ status: "error saving file" });
+      }
 
-        res.json({ status: "deleted successfully", id });
-      },
-    );
+      res.json({ status: "deleted successfully", id });
+    });
   });
 
 module.exports = router;
