@@ -1,5 +1,6 @@
 const express = require("express");
 const homeRouter = require("./routes/addHome.route");
+const userRouter = require("./routes/user.route");
 
 const app = express();
 const PORT = 3002;
@@ -8,7 +9,7 @@ app.use("/", (req, res, next) => {
   console.log(req.url, req.method);
   next();
 });
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: false }));
 app.get("/", (req, res) => {
   res.send(`
     <h1>welcome to airbbb</h1>
@@ -16,6 +17,7 @@ app.get("/", (req, res) => {
     `);
 });
 app.use(homeRouter); // add home route
+app.use("/api/users", userRouter);
 
 // for handeling 404 page, must be at end
 app.use((req, res, next) => {
