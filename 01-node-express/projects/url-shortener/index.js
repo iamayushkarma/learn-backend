@@ -4,26 +4,19 @@ const path = require("path");
 const router = require("./router/url.router");
 const { connectToMongoDb } = require("./connection");
 const URL = require("./model/url.model");
+const staticRouter = require("./router/static.router");
 
 const MONGO_URI = process.env.MONGO_URI;
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./views"));
-app.get("/", (req, res) => {
-  res.send("its Live");
-});
-app.get("/test", async (req, res) => {
-  const allUrls = await URL.find({});
-  return res.render("home", {
-    urls: allUrls,
-  });
-});
-
+app.use("/", staticRouter);
 app.use("/url", router);
-app.get("/:shortId", async (req, res) => {
+app.get("/url/:shortId", async (req, res) => {
   const shortId = req.params.shortId;
-  const extry = await URL.findOneAndUpdate(
+  const entry = await URL.findOneAndUpdate(
     {
       shortId,
     },
@@ -35,7 +28,7 @@ app.get("/:shortId", async (req, res) => {
       },
     },
   );
-  res.redirect(extry.redirectURL);
+  res.redirect(entry.redirectURL);
 });
 (async function () {
   try {

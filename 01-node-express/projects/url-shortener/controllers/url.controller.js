@@ -10,7 +10,9 @@ async function generateNewShortUrl(req, res) {
     redirectURL: body.url,
     visitedHistory: [],
   });
-  return res.json({ id: shortId });
+  return res.render("home", {
+    id: shortId,
+  });
 }
 async function getAnalytics(req, res) {
   const shortId = req.params.shortId;
