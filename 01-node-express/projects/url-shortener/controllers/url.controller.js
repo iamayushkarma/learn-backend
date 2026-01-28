@@ -9,15 +9,19 @@ async function generateNewShortUrl(req, res) {
     shortId: shortId,
     redirectURL: body.url,
     visitedHistory: [],
+    createdBy: req.user._id,
   });
+  const allUrls = await URL.find({ createdBy: req.user._id });
   return res.render("home", {
     id: shortId,
+    urls: allUrls,
   });
 }
 async function getAnalytics(req, res) {
   const shortId = req.params.shortId;
   if (!shortId) return res.status(400).json({ error: "short id is required" });
-  const result = await URL.findOne({ shortId });
+  const result = await URL.findOne({ shortId, createdBy: req.user._id });
+  if (!result) return res.status(404).json({ error: "URL not found" });
   return res.json({
     totalClicks: result.visitHistory.length,
     analytics: result.visitHistory,
