@@ -5,15 +5,21 @@ const router = require("./router/url.router");
 const { connectToMongoDb } = require("./connection");
 const URL = require("./model/url.model");
 const staticRouter = require("./router/static.router");
+const userRouter = require("./router/user.route");
 
 const MONGO_URI = process.env.MONGO_URI;
 const app = express();
+
+// middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./views"));
+
+// routing
 app.use("/", staticRouter);
 app.use("/url", router);
+app.use("/user", userRouter);
 app.get("/url/:shortId", async (req, res) => {
   const shortId = req.params.shortId;
   const entry = await URL.findOneAndUpdate(
