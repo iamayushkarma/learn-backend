@@ -1,23 +1,29 @@
 const express = require("express");
 const homeRouter = require("./routes/addHome.route");
 const userRouter = require("./routes/user.route");
+const multerRouter = require("./routes/multer.router");
 const connectDB = require("./db/dbconnection");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
 const PORT = 3002;
 
+app.set("view engine", "ejs");
+app.set("views", path.resolve("./views"));
 app.use("/", (req, res, next) => {
   console.log(req.url, req.method);
   next();
 });
 app.use(express.urlencoded({ extended: false }));
+
 app.get("/", (req, res) => {
   res.send(`
     <h1>welcome to airbbb</h1>
     <a href="/add-home">Add home</a>
     `);
 });
+app.use("/multer", multerRouter);
 app.use(homeRouter); // add home route
 app.use("/api/users", userRouter);
 
