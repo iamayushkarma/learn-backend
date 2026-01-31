@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%- include('./partials/head.ejs') %>
+    <title>Sign up</title>
+  </head>
+  <body class="bg-light">
+    <!-- Nav -->
+    <%- include('./partials/nav.ejs') %>
+
+    <!-- Signup Form -->
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+          <div class="card shadow-sm border-0 mt-5">
+            <div class="card-body p-4">
+              <h4 class="text-center mb-4">Create an account</h4>
+
+              <form method="POST" action="/user/signup">
+                <div class="mb-3">
+                  <label for="fullName" class="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="fullName"
+                    name="fullName"
+                    placeholder="Lional Messi"
+                    required
+                  />
+                </div>
+
+                <div class="mb-3">
+                  <label for="email" class="form-label">Email address</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    name="email"
+                    placeholder="name@example.com"
+                    required
+                  />
+                </div>
+
+                <div class="mb-3">
+                  <label for="password" class="form-label">Password</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="password"
+                    name="password"
+                    placeholder="••••••••"
+                    minlength="6"
+                    required
+                  />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                  Sign up
+                </button>
+              </form>
+
+              <p class="text-center text-muted mt-3 mb-0">
+                Already have an account?
+                <a href="/login" class="text-decoration-none">Login</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%- include('./partials/scripts.ejs') %>
+  </body>
+</html>
