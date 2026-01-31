@@ -1,11 +1,17 @@
 import User from "../models/user.model.js";
 
 const signin = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.matchPassword(email, password);
+  try {
+    const { email, password } = req.body;
+    const token = await User.matchPasswordandGenerateToken(email, password);
 
-  console.log("user", user);
-  return res.redirect("/");
+    console.log("token", token);
+    return res.cookie("token", token).redirect("/");
+  } catch (error) {
+    return res.render("signin", {
+      error: "Incorrect email or password",
+    });
+  }
 };
 const signup = async (req, res) => {
   const { fullName, email, password } = req.body;

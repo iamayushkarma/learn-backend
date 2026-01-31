@@ -3,6 +3,8 @@ import express from "express";
 import path from "path";
 import userRouter from "./routes/user.router.js";
 import mongoose from "mongoose";
+import cookieParser from "cookie-parser";
+import { checkForAuthentacationCookie } from "./middlewares/auth.middleware.js";
 // env config
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -19,10 +21,14 @@ app.set("views", path.resolve("./views"));
 
 // middlewares
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(checkForAuthentacationCookie("token"));
 
 // home route res
 app.get("/", (req, res) => {
-  res.render("home");
+  res.render("home", {
+    user: req.user,
+  });
 });
 
 //- routes
