@@ -8,7 +8,6 @@
   </head>
 
   <body class="bg-light">
-    <!-- Nav bar -->
     <%- include('./partials/nav.ejs') %>
 
     <div class="container mt-4">
@@ -21,7 +20,6 @@
           <div class="col-md-6 col-lg-4 mb-4">
             <div class="card h-100 shadow-sm border-0">
 
-              <!-- Cover Image -->
               <% if (blog.coverImageURL) { %>
                 <img
                   src="<%= blog.coverImageURL %>"

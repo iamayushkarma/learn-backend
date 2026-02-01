@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%- include('./partials/head.ejs') %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <title><%= blog.title %></title>
+    <style>
+      :root {
+        --primary-bg: #fafaf9;
+        --card-bg: #ffffff;
+        --text-primary: #1a1a1a;
+        --text-secondary: #6b7280;
+        --text-muted: #9ca3af;
+        --accent: #ea580c;
+        --accent-light: #fed7aa;
+        --border-subtle: #e7e5e4;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.12);
+      }
+
+      body {
+        background-color: var(--primary-bg);
+        font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text-primary);
+        line-height: 1.7;
+      }
+
+      .blog-container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+        animation: fadeIn 0.6s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .blog-header {
+        margin-bottom: 2rem;
+      }
+
+      .blog-title {
+        font-family: 'Literata', Georgia, serif;
+        font-size: 2.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--text-primary);
+        margin-bottom: 1.5rem;
+        letter-spacing: -0.02em;
+      }
+
+      .blog-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .author-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--accent-light);
+        flex-shrink: 0;
+      }
+
+      .author-info {
+        flex: 1;
+      }
+
+      .author-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        margin-bottom: 0.15rem;
+      }
+
+      .blog-date {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+      }
+
+      .cover-image-wrapper {
+        margin: 2rem 0 3rem;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        animation: scaleIn 0.7s ease-out 0.2s backwards;
+      }
+
+      @keyframes scaleIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .cover-image {
+        width: 100%;
+        height: auto;
+        max-height: 480px;
+        object-fit: cover;
+        display: block;
+      }
+
+      .blog-body {
+        font-family: 'Literata', Georgia, serif;
+        font-size: 1.125rem;
+        line-height: 1.8;
+        color: var(--text-primary);
+        margin: 3rem 0;
+        white-space: pre-line;
+        animation: fadeIn 0.8s ease-out 0.3s backwards;
+      }
+
+      .blog-body p {
+        margin-bottom: 1.5rem;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        background-color: var(--card-bg);
+        color: var(--text-secondary);
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        border: 1px solid var(--border-subtle);
+        transition: all 0.2s ease;
+        margin-top: 3rem;
+      }
+
+      .back-link:hover {
+        background-color: var(--accent);
+        color: white;
+        border-color: var(--accent);
+        transform: translateX(-4px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .back-arrow {
+        transition: transform 0.2s ease;
+      }
+
+      .back-link:hover .back-arrow {
+        transform: translateX(-3px);
+      }
+
+      .reading-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0%;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), #f97316);
+        z-index: 1000;
+        transition: width 0.1s ease;
+      }
+
+      @media (max-width: 768px) {
+        .blog-container {
+          padding: 2rem 1.25rem;
+        }
+
+        .blog-title {
+          font-size: 2rem;
+        }
+
+        .blog-body {
+          font-size: 1.05rem;
+        }
+
+        .cover-image {
+          max-height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Reading Progress Bar -->
+    <div class="reading-progress" id="progressBar"></div>
+    
+    <%- include('./partials/nav.ejs') %>
+    
+    <div class="blog-container">
+      <!-- Header -->
+      <article class="blog-header">
+        <h1 class="blog-title"><%= blog.title %></h1>
+        
+        <% if (blog.createdBy) { %>
+          <div class="blog-meta">
+            <img
+              src="<%= blog.createdBy.profileImageUrl %>"
+              alt="<%= blog.createdBy.fullName %>"
+              class="author-avatar"
+            />
+            <div class="author-info">
+              <div class="author-name"><%= blog.createdBy.fullName %></div>
+              <div class="blog-date">
+                <%= new Date(blog.createdAt).toLocaleDateString("en-US", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }) %>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      </article>
+
+      <!-- Cover Image -->
+      <% if (blog.coverImageURL) { %>
+        <div class="cover-image-wrapper">
+          <img
+            src="<%= blog.coverImageURL %>"
+            class="cover-image"
+            alt="<%= blog.title %>"
+          />
+        </div>
+      <% } %>
+
+      <!-- Blog Content -->
+      <div class="blog-body">
+        <%= blog.body %>
+      </div>
+
+      <!-- Back Link -->
+      <a href="/" class="back-link">
+        <span class="back-arrow">←</span>
+        Back to all posts
+      </a>
+    </div>
+
+    <script>
+      // Reading progress bar
+      window.addEventListener('scroll', () => {
+        const winScroll = document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        document.getElementById('progressBar').style.width = scrolled + '%';
+      });
+    </script>
+
+    <%- include('./partials/scripts.ejs') %>
+  </body>
+</html>

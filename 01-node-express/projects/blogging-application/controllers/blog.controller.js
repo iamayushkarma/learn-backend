@@ -15,4 +15,14 @@ const createBlog = async function (req, res) {
   });
   res.redirect(`/blog/${blog._id}`);
 };
-export { addNewBlog, createBlog };
+
+const showDynamicBlog = async function (req, res) {
+  const blog = await Blog.findById(req.params.id).populate("createdBy");
+  console.log(blog);
+
+  return res.render("blog", {
+    user: req.user,
+    blog,
+  });
+};
+export { addNewBlog, createBlog, showDynamicBlog };
