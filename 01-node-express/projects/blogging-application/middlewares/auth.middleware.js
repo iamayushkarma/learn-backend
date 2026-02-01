@@ -4,7 +4,7 @@ function checkForAuthentacationCookie(cookieName) {
   return (req, res, next) => {
     const tokenCookieValue = req.cookies[cookieName];
     if (!tokenCookieValue) {
-      next();
+      return next();
     }
 
     try {

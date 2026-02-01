@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { signin, signup } from "../controllers/user.controller.js";
+import { signin, signup, logout } from "../controllers/user.controller.js";
 
 const router = Router();
 
@@ -15,5 +15,7 @@ router
     return res.render("signup");
   })
   .post(signup);
+
+router.get("/logout", logout);
 
 export default router;

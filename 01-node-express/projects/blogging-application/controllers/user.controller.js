@@ -23,4 +23,8 @@ const signup = async (req, res) => {
   return res.redirect("/");
 };
 
-export { signin, signup };
+const logout = async (req, res) => {
+  res.clearCookie("token").redirect("/");
+};
+
+export { signin, signup, logout };
