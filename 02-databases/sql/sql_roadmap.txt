@@ -1,0 +1,1325 @@
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║              MYSQL MASTER ROADMAP — COMPLETE PROFESSIONAL GUIDE                ║
+║              Everything a backend developer must know about MySQL               ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+  Legend:
+  [★★★] = CRITICAL — must master this to be production-ready
+  [★★☆] = IMPORTANT — you'll use this regularly
+  [★☆☆] = GOOD TO KNOW — helpful for senior/edge cases
+  [ ✓ ] = Skill checkpoint — what you should be able to DO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 0 — HOW TO USE THIS ROADMAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  This is a skill map — not a tutorial, not a schedule.
+  It tells you WHAT to master and WHAT you should be able to do.
+
+  Recommended learning order:
+    1 → Core SQL (Section 1)
+    2 → Schema Design (Section 2)
+    3 → Joins (Section 3)
+    4 → Indexes + Performance (Section 4)
+    5 → Transactions (Section 5)
+    6 → MySQL-Specific Features (Section 6)
+    7 → Administration + Security (Section 7)
+    8 → Real-World Patterns (Section 8)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 1 — CORE SQL FUNDAMENTALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  1.1  WHAT IS A RELATIONAL DATABASE                   [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  - Tables = structured collections of rows (records)
+  - Columns = typed fields with constraints
+  - Rows = individual records
+  - Primary Key = unique identifier for each row
+  - Relationships between tables (1-to-1, 1-to-many, many-to-many)
+  - MySQL stores data in a structured, consistent format (schema-first)
+
+  MySQL vs other databases:
+  - MySQL is the most widely used open-source RDBMS
+  - Default engine: InnoDB (supports transactions, foreign keys, row locking)
+  - Older engine: MyISAM (no transactions — avoid for most modern apps)
+  - MySQL 8+ is the version to learn (most production systems use 5.7 or 8.x)
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  1.2  DATA TYPES YOU MUST KNOW                        [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Integers:
+    TINYINT     — -128 to 127 (or 0–255 UNSIGNED)
+    SMALLINT    — small numbers
+    INT         — standard integer (use for IDs, counters)
+    BIGINT      — large numbers, safe for IDs in large systems [★★★]
+    INT UNSIGNED — non-negative only (e.g., auto-increment IDs)
+
+  Decimals:
+    DECIMAL(p, s) — exact decimal; use for MONEY [★★★]
+                    Example: DECIMAL(10, 2) → 99999999.99
+    FLOAT/DOUBLE  — floating point; NOT safe for money (rounding errors)
+
+  Text:
+    VARCHAR(n)  — variable-length string up to n chars [★★★]
+    TEXT        — long text (no length limit); cannot be indexed in full
+    CHAR(n)     — fixed-length (useful for codes like 'US', 'EUR')
+    ENUM        — restricts values to a defined set (use sparingly)
+
+  Date and Time:
+    DATE        — YYYY-MM-DD
+    TIME        — HH:MM:SS
+    DATETIME    — YYYY-MM-DD HH:MM:SS (stores literal value, no timezone) [★★★]
+    TIMESTAMP   — auto-converts to UTC; limited range (up to 2038) [★★★]
+    YEAR        — 4-digit year
+
+  Binary:
+    BOOLEAN / TINYINT(1) — MySQL has no true BOOL; uses TINYINT(1) [★★★]
+    BLOB        — binary large object (files, images — usually avoid in DB)
+
+  JSON:
+    JSON        — native JSON column (MySQL 5.7.8+) [★★☆]
+                  Useful for flexible/semi-structured data
+                  Not a replacement for proper relational design
+
+  [★★★] Rule: Never store dates as VARCHAR. Never store money as FLOAT.
+               Always use BIGINT for IDs in large-scale systems.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  1.3  BASIC QUERY SYNTAX                              [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  The order MySQL processes clauses (not the order you write them):
+    FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT
+
+  SELECT
+  -------
+    SELECT column1, column2 FROM table_name;
+    SELECT * FROM users;                         -- avoid * in production
+    SELECT id, name AS full_name FROM users;     -- alias with AS [★★★]
+    SELECT DISTINCT status FROM orders;          -- remove duplicates [★★★]
+
+  WHERE
+  ------
+    SELECT * FROM users WHERE age > 18;
+    SELECT * FROM users WHERE status = 'active' AND age > 18;
+    SELECT * FROM users WHERE country IN ('US', 'UK', 'CA'); [★★★]
+    SELECT * FROM users WHERE name LIKE 'John%';  -- % = wildcard [★★☆]
+    SELECT * FROM users WHERE created_at BETWEEN '2024-01-01' AND '2024-12-31';
+
+  ORDER BY
+  ---------
+    SELECT * FROM users ORDER BY name ASC;
+    SELECT * FROM users ORDER BY created_at DESC; [★★★]
+    SELECT * FROM users ORDER BY last_name ASC, first_name ASC;
+
+  LIMIT / OFFSET (pagination)
+  ----------------------------
+    SELECT * FROM users LIMIT 10;              -- first 10 rows
+    SELECT * FROM users LIMIT 10 OFFSET 20;    -- skip 20, get next 10 [★★★]
+
+  GROUP BY + HAVING
+  ------------------
+    SELECT country, COUNT(*) AS total
+    FROM users
+    GROUP BY country;                                           [★★★]
+
+    SELECT country, COUNT(*) AS total
+    FROM users
+    GROUP BY country
+    HAVING COUNT(*) > 100;   -- HAVING filters AFTER grouping [★★★]
+
+    NOTE: WHERE filters rows BEFORE grouping.
+          HAVING filters groups AFTER grouping.
+
+  NULL Handling (critical — lots of bugs come from here)
+  -------------------------------------------------------
+    NULL = "unknown" — not zero, not empty string [★★★]
+
+    -- WRONG way to check NULL:
+    SELECT * FROM users WHERE deleted_at = NULL;     -- NEVER WORKS
+
+    -- CORRECT way:
+    SELECT * FROM users WHERE deleted_at IS NULL;    [★★★]
+    SELECT * FROM users WHERE deleted_at IS NOT NULL;
+
+    -- NULL in aggregates:
+    COUNT(*) counts all rows including NULLs
+    COUNT(column) skips NULL values              [★★☆]
+    SUM/AVG/MIN/MAX all ignore NULLs
+
+    -- NULL in comparisons:
+    NULL = NULL  →  NULL (not TRUE)
+    NULL != NULL →  NULL (not TRUE)
+    Use COALESCE(column, default_value) to replace NULLs [★★☆]
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  1.4  AGGREGATE FUNCTIONS                             [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+    COUNT(*)              — total row count
+    COUNT(column)         — count non-null values
+    COUNT(DISTINCT col)   — count unique non-null values [★★☆]
+    SUM(column)           — total sum
+    AVG(column)           — average
+    MIN(column)           — minimum value
+    MAX(column)           — maximum value
+
+  Combined example:
+    SELECT
+      status,
+      COUNT(*) AS total,
+      SUM(amount) AS revenue,
+      AVG(amount) AS avg_order,
+      MIN(created_at) AS first_order,
+      MAX(created_at) AS last_order
+    FROM orders
+    GROUP BY status;
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  1.5  PAGINATION PATTERNS                             [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Offset-Based Pagination (simple but has performance problems):
+  ---------------------------------------------------------------
+    SELECT * FROM products
+    ORDER BY id
+    LIMIT 20 OFFSET 100;      -- page 6 (skip first 100)
+
+    Problem: as OFFSET grows (e.g., OFFSET 100000), MySQL must scan
+    and discard all previous rows — gets very slow on large tables.
+
+  Keyset (Cursor) Pagination — PREFERRED for large datasets: [★★★]
+  ----------------------------------------------------------------
+    -- First page:
+    SELECT * FROM products ORDER BY id ASC LIMIT 20;
+
+    -- Next page (use last ID from previous page, e.g., id = 300):
+    SELECT * FROM products
+    WHERE id > 300
+    ORDER BY id ASC
+    LIMIT 20;
+
+    Why it's better:
+    - MySQL uses the index directly, skips no rows
+    - Performance stays consistent no matter how deep you paginate
+    - Requires a stable sort column (usually id or created_at)
+
+  [ ✓ ] Can write both pagination types
+  [ ✓ ] Can explain why keyset pagination is faster for deep pages
+  [ ✓ ] Know when to use each
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  1.6  UPSERTS IN MYSQL                                [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  "Upsert" = INSERT if not exists, UPDATE if exists
+
+  MySQL syntax — ON DUPLICATE KEY UPDATE:
+    INSERT INTO page_views (user_id, page, views)
+    VALUES (1, '/home', 1)
+    ON DUPLICATE KEY UPDATE views = views + 1;
+
+    Requires a UNIQUE or PRIMARY KEY constraint on the conflict column.
+
+  Alternative — REPLACE INTO (deletes + re-inserts; less safe):
+    REPLACE INTO settings (user_id, theme) VALUES (1, 'dark');
+    NOTE: REPLACE triggers DELETE + INSERT, resetting auto-increment
+          and CASCADE behaviors. Prefer ON DUPLICATE KEY UPDATE.
+
+  [ ✓ ] Can write upsert queries for counters and settings
+  [ ✓ ] Know why REPLACE INTO can be dangerous
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 2 — SCHEMA DESIGN + NORMALIZATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  2.1  SCHEMA DESIGN GOALS                             [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  A good schema achieves:
+  1. Data correctness  — prevents storing invalid or contradictory data
+  2. Maintainability   — easy to extend without rewriting everything
+  3. Performance       — efficient for common read/write patterns
+  4. Clarity           — self-documenting through naming and structure
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  2.2  NORMALIZATION                                   [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Normalization = organizing tables to eliminate redundancy and dependencies.
+
+  1NF — First Normal Form: [★★★]
+  --------------------------------
+  - Every column must contain atomic (indivisible) values
+  - No repeating groups or arrays in a column
+  - Every row must be uniquely identifiable
+
+  VIOLATION example:
+    users: id | name  | phones
+           1  | Alice | "555-1111, 555-2222"   ← multiple values in one column
+
+  CORRECT (separate table):
+    users:  id | name
+    phones: id | user_id | phone_number
+
+  2NF — Second Normal Form: [★★☆]
+  --------------------------------
+  - Must be in 1NF
+  - Every non-key column must depend on the WHOLE primary key
+    (Only matters when you have a composite primary key)
+
+  VIOLATION example (composite key: order_id + product_id):
+    order_items: order_id | product_id | quantity | product_name
+    product_name depends only on product_id, not the full composite key
+
+  CORRECT:
+    order_items: order_id | product_id | quantity
+    products:    product_id | product_name
+
+  3NF — Third Normal Form: [★★☆]
+  --------------------------------
+  - Must be in 2NF
+  - No transitive dependencies (non-key column depending on another non-key column)
+
+  VIOLATION example:
+    employees: id | name | department_id | department_name
+    department_name depends on department_id, not directly on id
+
+  CORRECT:
+    employees:   id | name | department_id
+    departments: department_id | department_name
+
+  When to DENORMALIZE (intentionally break normalization): [★★☆]
+  ---------------------------------------------------------------
+  - Heavy read patterns: pre-join data to avoid expensive queries at runtime
+  - Precomputed counters: store post_count on users instead of COUNT every time
+  - Acceptable duplication: store user's name on orders even if user changes it later
+  - Analytics/reporting tables: optimized read-only copies of normalized data
+
+  Rule: normalize by default, denormalize with a clear reason.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  2.3  KEYS AND RELATIONSHIPS                          [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Primary Keys:
+  - Uniquely identifies each row — no duplicates, no NULLs
+  - Surrogate key: auto-generated ID (INT AUTO_INCREMENT, UUID)   [★★★]
+  - Natural key: real-world value like email, SSN (use carefully — they change)
+  - Prefer BIGINT UNSIGNED AUTO_INCREMENT for scalable systems
+
+  Foreign Keys:
+  - Enforces referential integrity at the database level            [★★★]
+  - Prevents "orphan" rows (a post referencing a deleted user)
+  - Syntax:
+      FOREIGN KEY (user_id) REFERENCES users(id)
+
+  Relationships:
+  ---------------
+  One-to-One:
+    users: id, name
+    user_profiles: id, user_id (UNIQUE), bio, avatar
+
+  One-to-Many (most common):
+    users: id, name
+    posts: id, user_id, title, body    ← user_id references users.id
+
+  Many-to-Many (requires join table):
+    users:      id, name
+    roles:      id, name
+    user_roles: user_id, role_id       ← join table (composite PK) [★★★]
+
+  Cascade Behaviors (what happens on DELETE/UPDATE): [★★★]
+  ---------------------------------------------------------
+    ON DELETE CASCADE   → delete child rows when parent is deleted
+    ON DELETE SET NULL  → set FK to NULL when parent is deleted
+    ON DELETE RESTRICT  → block deletion if child rows exist (safest default)
+    ON DELETE NO ACTION → similar to RESTRICT in MySQL
+
+  Choose cascade behavior carefully:
+  - CASCADE: good for owned data (e.g., deleting a user deletes their posts)
+  - RESTRICT: good for safety (can't delete a user who still has orders)
+  - SET NULL: good for optional relationships
+
+  Soft Deletes: [★★★]
+  --------------------
+  Instead of deleting rows, mark them with a timestamp:
+    ALTER TABLE users ADD COLUMN deleted_at DATETIME DEFAULT NULL;
+
+  Query active records:
+    SELECT * FROM users WHERE deleted_at IS NULL;
+
+  Tradeoffs:
+  + Data is recoverable
+  + Audit trail preserved
+  - UNIQUE constraints don't work naturally (deleted emails block new signups)
+  - Queries need WHERE deleted_at IS NULL everywhere
+  - Use partial indexes or handle unique constraint with a workaround
+
+  Workaround for unique + soft delete:
+    Add a column like is_deleted TINYINT(1) DEFAULT 0
+    Make UNIQUE on (email, is_deleted) — or use a different strategy per app
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  2.4  CONSTRAINTS                                     [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+    NOT NULL         — column must always have a value
+    UNIQUE           — no duplicate values (NULLs are allowed, but vary by engine)
+    PRIMARY KEY      — NOT NULL + UNIQUE + clustered index
+    FOREIGN KEY      — referential integrity across tables
+    CHECK            — validate column values against an expression [★★☆]
+                       Example: CHECK (age >= 0 AND age <= 120)
+    DEFAULT          — fallback value if none provided
+
+  Always enforce rules at the DB layer, not just in application code.
+  Reason: multiple services/scripts may write to the same DB; only the DB
+  can guarantee consistency regardless of where the write comes from.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  2.5  NAMING CONVENTIONS                              [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  - Table names: plural, snake_case → users, order_items, product_categories
+  - Column names: snake_case → first_name, created_at, user_id
+  - Primary keys: id (or table_name_id)
+  - Foreign keys: referenced_table_id (e.g., user_id, product_id)
+  - Timestamps: created_at, updated_at, deleted_at
+  - Booleans: is_active, has_verified_email (clear intent)
+  - Avoid reserved words: order, group, key, user (or quote them)
+
+  [ ✓ ] Can design a 5-table schema for a real feature (users, posts, comments)
+  [ ✓ ] Can identify normalization violations and fix them
+  [ ✓ ] Can choose the right cascade behavior for a relationship
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 3 — JOINS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  3.1  JOIN TYPES                                      [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  INNER JOIN — Returns only matched rows from BOTH tables:
+  ---------------------------------------------------------
+    SELECT u.name, p.title
+    FROM users u
+    INNER JOIN posts p ON p.user_id = u.id;
+
+    → Only users who HAVE posts will appear.
+
+  LEFT JOIN — Returns ALL rows from left table, matched or not: [★★★]
+  -------------------------------------------------------------------
+    SELECT u.name, p.title
+    FROM users u
+    LEFT JOIN posts p ON p.user_id = u.id;
+
+    → Every user appears. If no posts, p.title will be NULL.
+    → Use when the right-side data is OPTIONAL.
+
+  RIGHT JOIN — Returns ALL rows from right table: [★☆☆]
+  ------------------------------------------------------
+    Rarely used. You can always flip tables and use LEFT JOIN instead.
+
+  FULL OUTER JOIN — MySQL does NOT support this natively: [★☆☆]
+  -------------------------------------------------------------
+    Simulate with UNION:
+    SELECT u.id, p.id FROM users u LEFT JOIN posts p ON ...
+    UNION
+    SELECT u.id, p.id FROM users u RIGHT JOIN posts p ON ...
+
+  CROSS JOIN — Cartesian product (every row × every row): [★☆☆]
+  --------------------------------------------------------------
+    SELECT * FROM colors CROSS JOIN sizes;
+    Use for: generating combinations. Avoid on large tables.
+
+  SELF JOIN — Join a table to itself: [★★☆]
+  ------------------------------------------
+    SELECT e.name AS employee, m.name AS manager
+    FROM employees e
+    LEFT JOIN employees m ON e.manager_id = m.id;
+
+    Use for: hierarchies, referral chains, adjacency lists.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  3.2  JOIN CONDITIONS                                 [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Standard FK join:
+    ON posts.user_id = users.id
+
+  Composite join (multiple columns):
+    ON order_items.order_id = orders.id
+    AND order_items.product_id = products.id
+
+  Avoid accidental fan-out (row multiplication):
+    If you join a 1-to-many relationship multiple times, rows multiply.
+    Example: joining both comments AND likes for each post can
+    make it look like you have more comments than you do.
+    Fix: aggregate subqueries, or join one relationship at a time. [★★★]
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  3.3  COMMON JOIN PATTERNS                            [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Fetch parent with count of children:
+    SELECT u.id, u.name, COUNT(p.id) AS post_count
+    FROM users u
+    LEFT JOIN posts p ON p.user_id = u.id
+    GROUP BY u.id, u.name;
+
+  Fetch list with optional related data:
+    SELECT p.id, p.title, c.name AS category_name
+    FROM posts p
+    LEFT JOIN categories c ON c.id = p.category_id;
+
+  Many-to-many traversal:
+    SELECT u.name, r.name AS role
+    FROM users u
+    INNER JOIN user_roles ur ON ur.user_id = u.id
+    INNER JOIN roles r ON r.id = ur.role_id;
+
+  Avoid N+1 queries: [★★★]
+    N+1 = fetching 1 list, then running 1 query PER item to get related data.
+    Fix: use a JOIN or IN clause to batch-fetch all related data at once.
+
+  [ ✓ ] Can predict output row counts before running a query
+  [ ✓ ] Can choose correct join type for each use case
+  [ ✓ ] Can avoid N+1 query patterns
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 4 — INDEXES AND PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  4.1  WHY INDEXES EXIST                               [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Without an index: MySQL reads every row of the table (full table scan).
+  With an index:    MySQL jumps directly to matching rows.
+
+  Trade-offs:
+    + Faster reads (SELECT, WHERE, JOIN, ORDER BY)
+    - Slower writes (INSERT, UPDATE, DELETE must also update the index)
+    - More disk storage used
+
+  Rule: Add indexes on columns you frequently filter, sort, or join on.
+        Do NOT add indexes on every column blindly.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  4.2  INDEX TYPES IN MYSQL                            [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  PRIMARY KEY Index:
+  - Automatically created on primary key column
+  - In InnoDB: the table IS physically sorted by primary key (clustered index)
+  - Makes primary key lookups extremely fast
+
+  UNIQUE Index:
+  - Enforces uniqueness on a column or set of columns [★★★]
+  - CREATE UNIQUE INDEX idx_email ON users(email);
+
+  Regular (Secondary) B-Tree Index:
+  - Default index type for non-PK columns                [★★★]
+  - CREATE INDEX idx_status ON orders(status);
+  - Helps: WHERE, ORDER BY, JOIN ON, GROUP BY
+
+  Composite (Multi-column) Index:
+  - Index on 2+ columns                                  [★★★]
+  - CREATE INDEX idx_user_status ON orders(user_id, status);
+  - CRITICAL RULE: Left-most prefix rule
+    → Index (user_id, status) helps:
+        WHERE user_id = 1
+        WHERE user_id = 1 AND status = 'active'
+    → But NOT:
+        WHERE status = 'active'   (skips leftmost column — no index benefit)
+
+  Full-Text Index:
+  - For text search queries using MATCH ... AGAINST      [★★☆]
+  - CREATE FULLTEXT INDEX idx_body ON posts(body);
+  - SELECT * FROM posts WHERE MATCH(body) AGAINST('mysql tutorial');
+
+  SPATIAL Index:
+  - For geographic/GIS data (POINT, POLYGON, etc.)       [★☆☆]
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  4.3  COMPOSITE INDEX COLUMN ORDERING                 [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Key principles:
+  1. Leftmost prefix rule — MySQL uses the index left-to-right, stops at
+     the first missing or range column.
+
+  2. Equality columns first, range columns last:
+     INDEX (status, created_at)
+     → WHERE status = 'active' AND created_at > '2024-01-01'  ✓ uses both
+     → WHERE created_at > '2024-01-01' AND status = 'active'  ✓ optimizer can reorder
+
+  3. High-cardinality columns first (more unique values = more selective):
+     INDEX (user_id, status) is better than INDEX (status, user_id)
+     if user_id has millions of unique values but status only has 3.
+
+  4. Covering index — when index contains ALL columns needed by the query: [★★☆]
+     MySQL can answer the query from the index alone (no table read).
+     Example: INDEX (user_id, status, created_at) covers:
+       SELECT created_at FROM orders WHERE user_id = 1 AND status = 'paid'
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  4.4  INDEX ANTI-PATTERNS TO AVOID                    [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  - Indexing every column "just in case" → slows writes, wastes space
+  - Low-cardinality columns alone (e.g., INDEX on is_active with 2 values)
+    → MySQL may ignore it and scan the table anyway
+  - NOT indexing foreign key columns → JOIN becomes a full table scan [★★★]
+  - Putting a function on an indexed column destroys the index:
+      WHERE YEAR(created_at) = 2024   ← index on created_at NOT used
+      WHERE created_at >= '2024-01-01' AND created_at < '2025-01-01'  ← USE THIS
+  - Using LIKE '%keyword' with leading wildcard → index not used [★★★]
+      LIKE 'keyword%'   ← index used (prefix search)
+      LIKE '%keyword'   ← full table scan (suffix search, no index)
+      LIKE '%keyword%'  ← full table scan
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  4.5  READING QUERY EXECUTION PLANS                   [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Use EXPLAIN to see how MySQL executes a query:
+    EXPLAIN SELECT * FROM orders WHERE user_id = 1 AND status = 'active';
+
+  Key columns to understand in EXPLAIN output:
+  -----------------------------------------------
+  type:         How MySQL accesses the table
+    system      → single row (best)
+    const       → single row via primary key or unique index
+    eq_ref      → one row per join (very good)
+    ref         → multiple rows via index (good for FK joins)  [★★★]
+    range       → range scan via index (acceptable)
+    index       → full index scan (not great)
+    ALL         → full TABLE scan (RED FLAG — investigate)     [★★★]
+
+  key:          Index actually used (NULL = no index used)     [★★★]
+  possible_keys: Indexes MySQL considered
+  rows:         Estimated rows to examine (lower = better)
+  Extra:
+    Using index       → covering index (excellent)
+    Using where       → additional filtering after index
+    Using filesort    → sorting without index (can be slow)    [★★★]
+    Using temporary   → temp table created (expensive)
+
+  EXPLAIN ANALYZE (MySQL 8+):
+    EXPLAIN ANALYZE SELECT ...
+    Shows actual vs estimated rows, actual execution time — more detailed [★★☆]
+
+  How to investigate a slow query:
+  1. Run EXPLAIN — look for type = ALL or key = NULL
+  2. Check rows column — is MySQL scanning millions of rows?
+  3. Check Extra — Using filesort? Using temporary?
+  4. Add the right index, re-run EXPLAIN, compare
+  5. Test query performance with SHOW PROFILES or performance_schema [★★☆]
+
+  [ ✓ ] Can design indexes for your app's most common queries
+  [ ✓ ] Can read EXPLAIN output and identify performance issues
+  [ ✓ ] Know the leftmost prefix rule by heart
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 5 — TRANSACTIONS + ISOLATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  5.1  WHAT IS A TRANSACTION                           [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  A transaction = a group of SQL statements treated as ONE unit.
+  Either ALL succeed, or ALL are rolled back.
+
+  Syntax:
+    START TRANSACTION;   (or BEGIN)
+      UPDATE accounts SET balance = balance - 500 WHERE id = 1;
+      UPDATE accounts SET balance = balance + 500 WHERE id = 2;
+    COMMIT;
+
+    If something goes wrong:
+    ROLLBACK;   ← undoes all changes since START TRANSACTION
+
+  ACID Properties: [★★★]
+  -----------------------
+  A — Atomicity:   All-or-nothing. Partial completion is impossible.
+  C — Consistency: DB always goes from one valid state to another.
+  I — Isolation:   Concurrent transactions don't interfere with each other.
+  D — Durability:  Committed data survives crashes (written to disk).
+
+  When to ALWAYS use transactions: [★★★]
+  ----------------------------------------
+  - Money transfers (debit one account, credit another)
+  - Inventory updates (check stock, then decrement)
+  - Creating related rows across tables (user + profile + settings)
+  - Any multi-step operation that must fully succeed or fully fail
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  5.2  CONCURRENCY PROBLEMS YOU MUST RECOGNIZE         [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Lost Update:
+    - Two transactions both read a value (e.g., balance = 100)
+    - Both update based on their read (both write balance = 150)
+    - One update is lost
+    Fix: SELECT ... FOR UPDATE or higher isolation level
+
+  Dirty Read:
+    - Transaction A reads data that Transaction B has modified but not yet committed
+    - If B rolls back, A has read invalid data
+    - MySQL's default isolation (READ COMMITTED) prevents this
+
+  Non-Repeatable Read:
+    - Transaction A reads a row twice
+    - Transaction B modifies it between A's two reads
+    - A sees different values for the same row
+
+  Phantom Read:
+    - Transaction A runs a query twice
+    - Transaction B inserts new rows that match A's query between the reads
+    - A sees "phantom" extra rows on the second read
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  5.3  ISOLATION LEVELS IN MYSQL                       [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  MySQL Default: REPEATABLE READ (InnoDB)
+
+  ─────────────────────────────────────────────────────────────────
+  Level             | Dirty Read | Non-Rep. | Phantom | Performance
+  ─────────────────────────────────────────────────────────────────
+  READ UNCOMMITTED  |  possible  | possible | possible| fastest
+  READ COMMITTED    |  prevented | possible | possible| fast
+  REPEATABLE READ   |  prevented | prevented| possible| medium (MySQL default)
+  SERIALIZABLE      |  prevented | prevented| prevented| slowest
+  ─────────────────────────────────────────────────────────────────
+
+  Practical guidance:
+  - REPEATABLE READ (default): good for most apps
+  - READ COMMITTED: common in high-concurrency write systems
+  - SERIALIZABLE: use for critical financial operations; expect contention
+
+  Set per-session:
+    SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  5.4  LOCKING IN MYSQL                                [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Row-level locks (InnoDB default):
+  - Most fine-grained; only locks the rows being modified
+  - Much better than table locks for concurrent apps
+
+  SELECT ... FOR UPDATE (pessimistic locking): [★★★]
+  ---------------------------------------------------
+    START TRANSACTION;
+    SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;
+    -- Other transactions trying to read/update this row will WAIT
+    UPDATE accounts SET balance = balance - 500 WHERE id = 1;
+    COMMIT;
+
+    Use when: you read a value and will update it, and you can't let
+              another transaction change it between your read and write.
+
+  SELECT ... FOR SHARE (shared lock): [★★☆]
+  ------------------------------------------
+    Allows other readers but blocks writers.
+    Use when: you need to read consistent data but don't plan to update.
+
+  Deadlocks: [★★★]
+  ------------------
+  A deadlock = Transaction A waits for B, and B waits for A.
+  MySQL detects and automatically kills one transaction (victim).
+
+  How to avoid:
+  - Access tables/rows in consistent order across transactions
+  - Keep transactions short and fast
+  - Avoid user interaction inside a transaction
+
+  Handle deadlocks in application code:
+  - Catch deadlock error (MySQL error code 1213)
+  - Retry the transaction with exponential backoff
+
+  [ ✓ ] Can wrap multi-step operations in transactions correctly
+  [ ✓ ] Can explain the difference between isolation levels
+  [ ✓ ] Know when to use SELECT FOR UPDATE and why
+  [ ✓ ] Can design retry logic for deadlocks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 6 — MYSQL-SPECIFIC FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.1  STORAGE ENGINES                                 [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  InnoDB (default and recommended for almost everything):
+  - ACID transactions
+  - Row-level locking
+  - Foreign key support
+  - Crash recovery
+  → Use InnoDB for all production tables
+
+  MyISAM (legacy):
+  - No transactions
+  - Table-level locking
+  - No foreign keys
+  → Avoid for new development
+
+  MEMORY:
+  - Data stored in RAM (lost on restart)
+  - Used for temporary tables, caching
+  → Rare use cases only
+
+  Check engine:
+    SHOW TABLE STATUS WHERE Name = 'users';
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.2  AUTO_INCREMENT                                  [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Standard pattern for integer primary keys:
+    CREATE TABLE users (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      PRIMARY KEY (id)
+    );
+
+  - MySQL automatically assigns the next available integer
+  - After INSERT, get the generated ID:
+      LAST_INSERT_ID()  or  connection.lastInsertId (in app drivers)
+
+  Considerations:
+  - Gaps in AUTO_INCREMENT are normal (rollbacks, deletes) — don't rely on sequence
+  - For high-scale/distributed systems: consider UUIDs or Snowflake IDs instead
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.3  JSON COLUMN TYPE (MySQL 5.7.8+)                 [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Useful for flexible or semi-structured data:
+    CREATE TABLE products (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255),
+      attributes JSON
+    );
+
+  Querying JSON:
+    SELECT attributes->'$.color' FROM products WHERE id = 1;
+    SELECT attributes->>'$.color' FROM products;  -- unquoted string
+
+  Indexing JSON:
+    You can create a generated (virtual) column and index it: [★★☆]
+    ALTER TABLE products
+      ADD COLUMN color VARCHAR(50)
+      GENERATED ALWAYS AS (attributes->>'$.color') VIRTUAL;
+    CREATE INDEX idx_color ON products(color);
+
+  When NOT to use JSON columns:
+  - When you regularly filter/sort on those fields → use proper columns
+  - When you need referential integrity on JSON values
+  - JSON is best for truly flexible metadata, not core domain data
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.4  VIEWS                                           [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  A view = a saved SQL query you can query like a table:
+    CREATE VIEW active_users AS
+    SELECT id, name, email FROM users WHERE deleted_at IS NULL;
+
+    SELECT * FROM active_users WHERE email LIKE '%@gmail.com';
+
+  Use for:
+  - Simplifying complex repeated queries
+  - Hiding complexity from application layer
+  - Security (grant access to view, not raw tables)
+
+  Limitations:
+  - Cannot always INSERT/UPDATE through views
+  - No performance benefit (it re-runs the query each time)
+  - Materialized views NOT supported natively in MySQL (use a real table + cron)
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.5  STORED PROCEDURES + FUNCTIONS                   [★☆☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Stored Procedure: reusable SQL block, can have logic (IF, LOOP, etc.):
+    DELIMITER //
+    CREATE PROCEDURE get_active_users()
+    BEGIN
+      SELECT * FROM users WHERE deleted_at IS NULL;
+    END //
+    DELIMITER ;
+
+    CALL get_active_users();
+
+  Stored Function: returns a single value:
+    CREATE FUNCTION get_tax(price DECIMAL(10,2)) RETURNS DECIMAL(10,2)
+    BEGIN
+      RETURN price * 0.18;
+    END;
+
+  When to use:
+  - Complex business logic best kept close to the data
+  - When app-layer cannot be changed but DB behavior needs updating
+
+  When to AVOID:
+  - In most modern app architectures, logic lives in application code
+  - Hard to version-control, test, and debug
+  - Keep most business logic in your application layer
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.6  TRIGGERS                                        [★☆☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  A trigger = SQL code that runs automatically on INSERT/UPDATE/DELETE:
+    CREATE TRIGGER update_user_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW
+    SET NEW.updated_at = NOW();
+
+  Use for: audit logs, auto-updating timestamps
+  Avoid for: complex business logic (hidden behavior is hard to debug)
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.7  WINDOW FUNCTIONS (MySQL 8.0+)                   [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Window functions compute values OVER a set of rows without collapsing them:
+
+    SELECT
+      user_id,
+      order_date,
+      amount,
+      SUM(amount) OVER (PARTITION BY user_id ORDER BY order_date) AS running_total,
+      RANK() OVER (PARTITION BY user_id ORDER BY amount DESC) AS rank_by_amount,
+      ROW_NUMBER() OVER (ORDER BY created_at) AS row_num
+    FROM orders;
+
+  Key window functions:
+    ROW_NUMBER()  — sequential number per partition
+    RANK()        — rank with gaps (1, 2, 2, 4)
+    DENSE_RANK()  — rank without gaps (1, 2, 2, 3)
+    LEAD()        — access next row's value
+    LAG()         — access previous row's value
+    SUM/AVG/COUNT OVER — running aggregates
+
+  Use for: analytics, rankings, running totals, time-series analysis
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.8  COMMON TABLE EXPRESSIONS (CTEs) MySQL 8.0+      [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  CTEs = named temporary result sets within a query (cleaner than subqueries):
+
+    WITH recent_orders AS (
+      SELECT user_id, COUNT(*) AS order_count
+      FROM orders
+      WHERE created_at > '2024-01-01'
+      GROUP BY user_id
+    )
+    SELECT u.name, ro.order_count
+    FROM users u
+    JOIN recent_orders ro ON ro.user_id = u.id
+    WHERE ro.order_count > 5;
+
+  Recursive CTEs — for hierarchical data (trees, org charts): [★★☆]
+    WITH RECURSIVE org_tree AS (
+      SELECT id, name, manager_id, 0 AS depth
+      FROM employees WHERE manager_id IS NULL    -- root
+
+      UNION ALL
+
+      SELECT e.id, e.name, e.manager_id, ot.depth + 1
+      FROM employees e
+      JOIN org_tree ot ON e.manager_id = ot.id  -- children
+    )
+    SELECT * FROM org_tree;
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  6.9  SUBQUERIES                                      [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Subquery in WHERE:
+    SELECT * FROM users
+    WHERE id IN (
+      SELECT DISTINCT user_id FROM orders WHERE status = 'paid'
+    );
+
+  Correlated subquery (references outer query — runs once per row): [★★☆]
+    SELECT u.name, (
+      SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id
+    ) AS order_count
+    FROM users u;
+
+    Note: Correlated subqueries can be slow — often better replaced by a JOIN.
+
+  Subquery in FROM (derived table):
+    SELECT dept, AVG(salary) AS avg_salary
+    FROM (
+      SELECT department AS dept, salary
+      FROM employees WHERE is_active = 1
+    ) AS active_employees
+    GROUP BY dept;
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 7 — MYSQL ADMINISTRATION + SECURITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  7.1  USERS AND PRIVILEGES                            [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Principle of Least Privilege: give each user only the minimum they need. [★★★]
+
+  Create a user:
+    CREATE USER 'app_user'@'%' IDENTIFIED BY 'securepassword';
+
+  Grant specific privileges:
+    GRANT SELECT, INSERT, UPDATE, DELETE ON mydb.* TO 'app_user'@'%';
+    GRANT SELECT ON mydb.reports TO 'readonly_user'@'%';
+
+  Revoke privileges:
+    REVOKE DELETE ON mydb.* FROM 'app_user'@'%';
+
+  View privileges:
+    SHOW GRANTS FOR 'app_user'@'%';
+
+  Remove user:
+    DROP USER 'app_user'@'%';
+
+  Apply changes:
+    FLUSH PRIVILEGES;
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  7.2  SQL INJECTION PREVENTION                        [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  SQL injection = attacker injects SQL code through user input.
+
+  NEVER do this:
+    "SELECT * FROM users WHERE name = '" + userInput + "'"
+    → If userInput = "'; DROP TABLE users; --" → disaster.
+
+  ALWAYS use parameterized queries / prepared statements: [★★★]
+    const [rows] = await connection.execute(
+      'SELECT * FROM users WHERE email = ? AND status = ?',
+      [email, status]
+    );
+
+  With ORMs (Prisma, Sequelize): their query builders are parameterized by default.
+
+  For dynamic column/table names (you can't parameterize these):
+  - Validate against a whitelist of allowed column names
+  - Never pass raw user input as column/table name
+  Example:
+    const ALLOWED_SORT_COLUMNS = ['name', 'created_at', 'email'];
+    if (!ALLOWED_SORT_COLUMNS.includes(sortColumn)) throw new Error('Invalid sort');
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  7.3  BACKUPS + RESTORE                               [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Export (dump) a database:
+    mysqldump -u root -p mydb > backup.sql
+    mysqldump -u root -p mydb --single-transaction > backup.sql  (non-locking)
+
+  Restore from dump:
+    mysql -u root -p mydb < backup.sql
+
+  Export specific table:
+    mysqldump -u root -p mydb users > users_backup.sql
+
+  Automated backups:
+  - Use cron + mysqldump for small databases
+  - Use MySQL Enterprise Backup, Percona XtraBackup for large databases
+  - Cloud databases (RDS, Cloud SQL) — use their native snapshot tools
+
+  Backup strategies:
+  - Full backup: complete dump of all data
+  - Incremental: only changes since last backup (via binary log)
+  - Point-in-time recovery: replay binary logs to restore to exact moment
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  7.4  MIGRATIONS (SCHEMA CHANGES)                     [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  A migration = a versioned, reversible script that changes your schema.
+
+  Use migration tools:
+  - Flyway, Liquibase (standalone)
+  - Prisma Migrate (for Node.js)
+  - Sequelize CLI, TypeORM migrations
+
+  Basic migration rules:
+  - Never edit a deployed migration — create a new one
+  - Always test migrations on a copy of production data first
+  - Make migrations reversible (have a "down" migration)
+
+  Safe schema changes (zero/low downtime): [★★★]
+  -----------------------------------------------
+  Adding a nullable column:
+    ALTER TABLE users ADD COLUMN phone VARCHAR(20) DEFAULT NULL;
+    → Safe: non-blocking in most setups
+
+  Adding a NOT NULL column:
+    1. Add as nullable: ALTER TABLE users ADD COLUMN score INT DEFAULT NULL;
+    2. Backfill data: UPDATE users SET score = 0 WHERE score IS NULL;
+    3. Add constraint: ALTER TABLE users MODIFY COLUMN score INT NOT NULL DEFAULT 0;
+    → Safe: gradual 3-step approach avoids locking the table
+
+  Dropping a column:
+    1. First remove all references in application code
+    2. Deploy the code change
+    3. Then drop the column
+    → Never drop before updating code (breaks running app instances)
+
+  Renaming a column (tricky):
+    1. Add new column
+    2. Dual-write to both old and new column in app
+    3. Backfill old column's data to new column
+    4. Switch reads to new column
+    5. Remove writes to old column
+    6. Drop old column
+    → This "expand-contract" pattern avoids downtime
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  7.5  MONITORING + SLOW QUERY LOG                     [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Enable slow query log to capture long-running queries:
+    SET GLOBAL slow_query_log = 'ON';
+    SET GLOBAL long_query_time = 1;   -- log queries taking > 1 second
+    SET GLOBAL slow_query_log_file = '/var/log/mysql/slow.log';
+
+  Analyze slow query log:
+    mysqldumpslow -s t /var/log/mysql/slow.log   -- sort by time
+
+  SHOW PROCESSLIST — see running queries:
+    SHOW FULL PROCESSLIST;            -- see all active connections/queries
+
+  Performance Schema (MySQL 8+):
+    SELECT * FROM performance_schema.events_statements_summary_by_digest
+    ORDER BY sum_timer_wait DESC LIMIT 10;
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 8 — REAL-WORLD PATTERNS AND SKILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  8.1  COMMON PATTERNS IN PRODUCTION APPS              [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Audit Log Table:
+    CREATE TABLE audit_logs (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      table_name VARCHAR(100),
+      record_id BIGINT UNSIGNED,
+      action ENUM('INSERT','UPDATE','DELETE'),
+      changed_by BIGINT UNSIGNED,
+      changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      old_values JSON,
+      new_values JSON
+    );
+
+  Counter Caching (denormalization for performance):
+    Add post_count to users table.
+    Increment/decrement with each post INSERT/DELETE.
+    Read post_count directly instead of COUNT(*) per request.
+
+  Soft Delete Pattern:
+    All active-record queries use: WHERE deleted_at IS NULL
+    Deletion: UPDATE table SET deleted_at = NOW() WHERE id = ?
+    Recovery: UPDATE table SET deleted_at = NULL WHERE id = ?
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  8.2  DATE AND TIME BEST PRACTICES                    [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Always store timestamps in UTC:
+  - Store DATETIME/TIMESTAMP as UTC
+  - Convert to user's timezone in application layer, not DB layer
+
+  TIMESTAMP vs DATETIME:
+  - TIMESTAMP: auto-converts to UTC on storage; limited to 2038 (32-bit Unix epoch)
+  - DATETIME: stores literal value; no timezone conversion; no range limit
+  - For future-proof systems: use DATETIME and manage timezone in app code
+
+  Useful MySQL time functions:
+    NOW()                      -- current datetime
+    CURDATE()                  -- current date only
+    UTC_TIMESTAMP()            -- current datetime in UTC [★★★]
+    DATE(datetime_column)      -- extract date portion
+    YEAR(date), MONTH(date)    -- extract parts
+    DATEDIFF(date1, date2)     -- days between dates
+    DATE_ADD(date, INTERVAL 7 DAY)  -- add time
+    DATE_FORMAT(date, '%Y-%m')      -- format date [★★☆]
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  8.3  SENSITIVE DATA STORAGE                          [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Passwords:
+  - NEVER store plain text passwords
+  - NEVER store MD5 or SHA1 passwords (broken)
+  - ALWAYS hash with bcrypt, argon2, or scrypt in application layer [★★★]
+  - The DB only stores the hash string
+
+  PII (Personal Identifiable Information):
+  - Consider encrypting at-rest sensitive fields (SSN, credit card)
+  - Use application-level encryption for maximum control
+  - Consider field-level encryption with key management (AWS KMS, HashiCorp Vault)
+
+  Secrets and credentials:
+  - NEVER store API keys, secrets in plain columns
+  - Encrypt or store references to a secrets manager instead
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  8.4  CONNECTION MANAGEMENT                           [★★★]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Always use a connection pool in applications:
+  - Opening a new DB connection is expensive (100-300ms)
+  - Pool reuses existing connections
+  - Common pool sizes: 5–20 connections depending on workload
+
+  In Node.js (mysql2):
+    const pool = mysql.createPool({
+      host: 'localhost', user: 'app_user', password: '...', database: 'mydb',
+      connectionLimit: 10,
+      waitForConnections: true,
+      queueLimit: 0
+    });
+
+  Connection limits:
+    SHOW VARIABLES LIKE 'max_connections';   -- default is often 151
+    SHOW STATUS LIKE 'Threads_connected';    -- current connections
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  8.5  REPLICATION OVERVIEW (CONCEPT LEVEL)            [★★☆]    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  MySQL Replication:
+  - Primary (master) handles all writes
+  - Replicas (slaves) receive changes and provide read capacity
+  - All writes go to primary; heavy reads can go to replicas
+
+  Binary Log (binlog):
+  - Records all changes to data
+  - Used for replication AND point-in-time recovery
+
+  When to think about replication:
+  - Read-heavy workloads where one server is maxed out
+  - High availability (failover if primary goes down)
+  - Backups that don't affect production writes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 9 — SKILL CHECKPOINTS SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  You are production-ready when you can do all of the following:
+
+  QUERYING
+  [ ✓ ] Write queries for any API endpoint: list, filter, sort, paginate
+  [ ✓ ] Handle NULLs correctly in WHERE, JOIN, and aggregates
+  [ ✓ ] Write both offset and keyset pagination, know when to use each
+  [ ✓ ] Use GROUP BY + HAVING for aggregation queries
+  [ ✓ ] Build multi-table queries with proper JOINs
+  [ ✓ ] Avoid N+1 patterns with JOINs or batched queries
+  [ ✓ ] Write upserts with ON DUPLICATE KEY UPDATE
+
+  SCHEMA DESIGN
+  [ ✓ ] Design normalized schemas for real-world domains
+  [ ✓ ] Choose correct data types for every column
+  [ ✓ ] Set up FKs, unique constraints, NOT NULL, and CHECK constraints
+  [ ✓ ] Implement soft deletes and know the tradeoffs
+  [ ✓ ] Justify when to denormalize and handle the consistency tradeoffs
+
+  PERFORMANCE
+  [ ✓ ] Design indexes for your API's most common query patterns
+  [ ✓ ] Read EXPLAIN output and identify seq scans, missing indexes
+  [ ✓ ] Know the leftmost prefix rule for composite indexes
+  [ ✓ ] Avoid function-on-column anti-patterns that kill index usage
+  [ ✓ ] Avoid over-indexing while keeping hot paths fast
+
+  TRANSACTIONS + INTEGRITY
+  [ ✓ ] Wrap multi-step operations in transactions
+  [ ✓ ] Use SELECT FOR UPDATE when needed
+  [ ✓ ] Understand isolation levels and their tradeoffs
+  [ ✓ ] Design retry logic for deadlocks (concept + implementation)
+
+  MIGRATIONS + MAINTENANCE
+  [ ✓ ] Write safe schema migrations (additive, reversible)
+  [ ✓ ] Use the expand-contract pattern for breaking changes
+  [ ✓ ] Run and understand EXPLAIN ANALYZE for slow queries
+  [ ✓ ] Enable and analyze slow query logs
+
+  SECURITY
+  [ ✓ ] ALWAYS use parameterized queries — zero exceptions
+  [ ✓ ] Apply least-privilege on DB users
+  [ ✓ ] Never store plain text passwords
+  [ ✓ ] Handle constraint violation errors gracefully in code
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 10 — QUICK REFERENCE CHEATSHEET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  MUST-USE commands daily:
+  ─────────────────────────────────────────────────────
+  EXPLAIN <query>               -- analyze query plan
+  SHOW INDEX FROM <table>;      -- see existing indexes
+  SHOW CREATE TABLE <table>;    -- see full table definition
+  DESCRIBE <table>;             -- see column definitions
+  SHOW TABLES;                  -- list all tables
+  SHOW FULL PROCESSLIST;        -- see active queries
+  SHOW VARIABLES LIKE '%...%';  -- check server settings
+  ─────────────────────────────────────────────────────
+
+  INDEX creation syntax:
+  ─────────────────────────────────────────────────────
+  CREATE INDEX idx_name ON table(col);
+  CREATE UNIQUE INDEX idx_name ON table(col);
+  CREATE INDEX idx_name ON table(col1, col2);
+  DROP INDEX idx_name ON table;
+  ALTER TABLE t ADD INDEX idx_name (col);
+  ─────────────────────────────────────────────────────
+
+  Transaction syntax:
+  ─────────────────────────────────────────────────────
+  START TRANSACTION;
+    -- your SQL here
+  COMMIT;
+  -- or --
+  ROLLBACK;
+  SAVEPOINT sp1;
+  ROLLBACK TO SAVEPOINT sp1;
+  ─────────────────────────────────────────────────────
+
+  User management:
+  ─────────────────────────────────────────────────────
+  CREATE USER 'u'@'%' IDENTIFIED BY 'pass';
+  GRANT SELECT, INSERT ON db.* TO 'u'@'%';
+  REVOKE DELETE ON db.* FROM 'u'@'%';
+  SHOW GRANTS FOR 'u'@'%';
+  DROP USER 'u'@'%';
+  ─────────────────────────────────────────────────────
+
+  Backup:
+  ─────────────────────────────────────────────────────
+  mysqldump -u root -p mydb > backup.sql
+  mysql -u root -p mydb < backup.sql
+  ─────────────────────────────────────────────────────
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  END OF MYSQL MASTER ROADMAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [★★★] = Must master | [★★☆] = Important | [★☆☆] = Good to know
+  This roadmap covers MySQL 8.0+ with InnoDB engine (production standard).
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
